@@ -10,7 +10,7 @@ import "@sass/routes/Start.sass";
 
 function Start() {
   return (
-    <Layout className="audiovis-io">
+    <Layout className="audiovis-io start">
       <main className="two-columns">
         <div className="left">
           <h2 className="heading">Willkommen</h2>
