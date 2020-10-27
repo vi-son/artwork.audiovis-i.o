@@ -1,0 +1,29 @@
+@import @sass/rouge/1-settings/_colors.sass
+
+svg
+  polygon
+    &:hover
+      fill: var(--color-dirtysnow)
+
+#svg
+  cursor: none
+
+#cursor
+  pointer-events: none
+
+.canvas-wrapper
+  padding: 0
+  cursor: pointer
+  position: relative
+  .hover-feeling
+    position: absolute
+    color: var(--color-darkness)
+    bottom: 6vh
+  .selected-feeling
+    position: absolute
+    top: 0
+    z-index: 999
+    padding: 4vh 10vw
+    text-align: center
+    h5
+      color: var(--color-darkness)
