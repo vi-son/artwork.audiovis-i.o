@@ -1,5 +1,5 @@
 // node_modules imports
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import ReactDOM from "react-dom";
 import { BrowserRouter as Router, Switch, Route, Link } from "react-router-dom";
 // Local imports: Routes
@@ -18,10 +18,32 @@ const Harvester = () => {
   // );
   // return <Finish json={exampleMapping}></Finish>;
 
+const initServiceWorker = () => {
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker
+          .register("/sw.js")
+          .then((registration) => {
+            console.log("Serviceworker registered: ", registration);
+          })
+          .catch((registrationError) => {
+            console.log(
+              "Serviceworker registration failed: ",
+              registrationError
+            );
+          });
+      });
+    }
+  };
+
   const webGLAvailable = WEBGL.isWebGLAvailable();
   if (!webGLAvailable) {
     return <h1>WEBGL.getWebGLErrorMessage()</h1>;
   }
+
+  useEffect(() => {
+    initServiceWorker();
+  })
 
   return (
     <Router

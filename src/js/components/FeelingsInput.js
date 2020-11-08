@@ -20,7 +20,7 @@ export default ({ onSelect }) => {
     ["begeistert", "froh", "gelassen"],
     ["bewundernd", "vertrauend", "akzeptierend"],
     ["erschrocken", "ängstlich", "besorgt"],
-    ["erstaunlich", "überrascht", "verwirrt"],
+    ["erstaunt", "überrascht", "verwirrt"],
     ["betrübt", "traurig", "nachdenklich"],
     ["angewidert", "ablehnend", "gelangweilt"],
     ["wütend", "verärgert", "gereizt"]

@@ -66,7 +66,8 @@ export default ({ mapping }) => {
     const renderer = new THREE.WebGLRenderer({
       canvas: canvasRef.current,
       antialias: 1,
-      alpha: true
+      alpha: true,
+      preserveDrawingBuffer: true 
     });
     renderer.setSize(size.width, size.height);
 
@@ -436,6 +437,10 @@ export default ({ mapping }) => {
       <div className="canvas-wrapper" ref={canvasWrapperRef}>
         <canvas ref={canvasRef}></canvas>
       </div>
+      <button onClick={() => {
+                var rendering = canvasRef.current.toDataURL();
+                console.log(rendering);
+              }}>Download</button> 
     </div>
   );
 };

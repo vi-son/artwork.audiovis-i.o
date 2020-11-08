@@ -8,7 +8,6 @@ class AudioPlayer extends React.Component {
     super(props);
     this.audio = new Audio(this.props.audiosrc);
     this.changeTime = this.changeTime.bind(this);
-    this.dragTime = this.dragTime.bind(this);
     this.setDuration = this.setDuration.bind(this);
     this.setupAudio();
     this.state = {
@@ -116,8 +115,6 @@ class AudioPlayer extends React.Component {
       (e.clientX - xOffset) / e.target.getBoundingClientRect().width;
     this.audio.currentTime = this.state.duration * percent;
   }
-
-  dragTime(e) {}
 
   render() {
     const debug = (
