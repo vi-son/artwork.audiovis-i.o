@@ -146,7 +146,7 @@ export default ({ onChange, onSelect }) => {
             y: normal.y,
             z: normal.z
           };
-          const cameraTween = new TWEEN.Tween(from).to(to, 1500);
+          const cameraTween = new TWEEN.Tween(from).to(to, 500);
           cameraTween
             .onUpdate(function() {
               camera.position.set(from.x, from.y, from.z);
