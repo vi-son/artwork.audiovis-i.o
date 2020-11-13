@@ -45,7 +45,7 @@ function Finish({ json }) {
           </div>
         </div>
         <div className="totem">
-          <Totem mapping={mappings}></Totem>
+          {json !== undefined ? <Totem mapping={mappings}></Totem> : <></>}
         </div>
         <div className="buttons">
           <button onClick={prepareDownload}>download daten</button>

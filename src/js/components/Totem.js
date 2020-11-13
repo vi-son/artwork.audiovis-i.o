@@ -1,8 +1,9 @@
 // node_modules imports
-import React, { useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { PositionalAudioHelper } from "three/examples/jsm/helpers/PositionalAudioHelper.js";
+import md5 from "blueimp-md5";
 // Local imports
 import createLineGeometry from "@utils/createLineGeometry.js";
 // Style imports
@@ -21,6 +22,15 @@ const remap = (v, a, b, c, d) => {
 export default ({ mapping }) => {
   const canvasRef = useRef();
   const canvasWrapperRef = useRef();
+
+  const prepareDownload = imageData => {
+    const downloadLink = document.createElement("a");
+    const dataStr = imageData;
+    downloadLink.href = dataStr;
+    downloadLink.download = `${md5(Date.now())}.png`;
+    document.body.append(downloadLink);
+    downloadLink.click();
+  };
 
   const colorMappings = mapping
     .filter(m => m.type === "Farbe")
@@ -67,7 +77,7 @@ export default ({ mapping }) => {
       canvas: canvasRef.current,
       antialias: 1,
       alpha: true,
-      preserveDrawingBuffer: true 
+      preserveDrawingBuffer: true
     });
     renderer.setSize(size.width, size.height);
 
@@ -198,7 +208,8 @@ export default ({ mapping }) => {
       flatShading: true
     });
     feelingMappings.map((f, i) => {
-      const point = f.feeling.point;
+      console.log(f);
+      const point = f.feeling.point ? f.feeling.point : { x: 0, y: 0, z: 0 };
       const position = new THREE.Vector3(point.x, point.y, point.z);
       const sphereGeometry = new THREE.SphereBufferGeometry(0.26, 32, 32);
       const feelingSphere = new THREE.Mesh(sphereGeometry, feelingMaterial);
@@ -437,10 +448,15 @@ export default ({ mapping }) => {
       <div className="canvas-wrapper" ref={canvasWrapperRef}>
         <canvas ref={canvasRef}></canvas>
       </div>
-      <button onClick={() => {
-                var rendering = canvasRef.current.toDataURL();
-                console.log(rendering);
-              }}>Download</button> 
+      <button
+        className="download-rendering"
+        onClick={() => {
+          var rendering = canvasRef.current.toDataURL();
+          prepareDownload(rendering);
+        }}
+      >
+        Download
+      </button>
     </div>
   );
 };

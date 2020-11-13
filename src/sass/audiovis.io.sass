@@ -89,25 +89,31 @@ canvas:focus
   outline: none
 
 .mappings
-  position: fixed
-  right: 0
-  top: 30px
-  background: black
-  padding: 20px
-  font-size: 11px
-  *
-    color: white !important
-  ol
-    li
+  &.debug
+    position: fixed
+    left: 0
+    top: 0
+    background: black
+    padding: 20px
+    font-size: 11px
+    max-width: 50ch
+    hr
+      opacity: 0.2
+      margin: 20px 0
+    *
+      color: white !important
+      word-wrap: break-word
+    ol
+        li
+        color: white
+    .mapping
+      display: flex
+      flex-direction: column
+      border-top: 1px solid rgba(255, 255, 255, 0.2)
+      margin-top: 10px
+      padding-top: 10px
+    span, b, small
       color: white
-  .mapping
-    display: flex
-    flex-direction: column
-    border-top: 1px solid rgba(255, 255, 255, 0.2)
-    margin-top: 10px
-    padding-top: 10px
-  span, b, small
-    color: white
 
 
 .two-columns

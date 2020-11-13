@@ -13,20 +13,15 @@ import "@sass/audiovis.io.sass";
 const Harvester = () => {
   const [mappingJson, setMappingJson] = useState(undefined);
 
-  // const exampleMapping = JSON.stringify(
-  //   require("../json/example.mapping20201025-16.11.json")
-  // );
-  // return <Finish json={exampleMapping}></Finish>;
-
-const initServiceWorker = () => {
+  const initServiceWorker = () => {
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => {
         navigator.serviceWorker
           .register("/sw.js")
-          .then((registration) => {
+          .then(registration => {
             console.log("Serviceworker registered: ", registration);
           })
-          .catch((registrationError) => {
+          .catch(registrationError => {
             console.log(
               "Serviceworker registration failed: ",
               registrationError
@@ -43,7 +38,7 @@ const initServiceWorker = () => {
 
   useEffect(() => {
     initServiceWorker();
-  })
+  });
 
   return (
     <Router
@@ -61,11 +56,11 @@ const initServiceWorker = () => {
           <Flow
             onFinish={(mappingJson, history) => {
               setMappingJson(mappingJson);
-              history.push("/harvester.html/result");
+              history.push("/result");
             }}
           />
         </Route>
-        <Route path="/harvester.html/result">
+        <Route path="/result">
           <Finish json={mappingJson} />
         </Route>
       </Switch>

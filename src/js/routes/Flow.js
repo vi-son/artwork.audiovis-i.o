@@ -224,7 +224,7 @@ const Flow = ({ onFinish }) => {
   );
 
   const mappingDebug = (
-    <div className="mappings">
+    <div className="mappings debug">
       <span>{completedCount}</span>
       <hr />
       <h5>Scenario count: {scenarioCount}</h5>
@@ -274,7 +274,7 @@ const Flow = ({ onFinish }) => {
         scenarioCount={scenarioCount}
       />
 
-      {/* {mappingDebug} */}
+      {mappingDebug}
     </Layout>
   );
 };
