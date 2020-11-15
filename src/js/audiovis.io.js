@@ -3,14 +3,14 @@ import React, { useState, useRef, useEffect } from "react";
 import ReactDOM from "react-dom";
 import { BrowserRouter as Router, Switch, Route, Link } from "react-router-dom";
 // Local imports: Routes
-import { WEBGL } from "@utils/webgl.js";
-import Flow from "@routes/Flow.js";
-import Start from "@routes/Start.js";
-import Finish from "@routes/Finish.js";
+import { WEBGL } from "./utils/webgl.js";
+import Flow from "./routes/Flow.js";
+import Start from "./routes/Start.js";
+import Finish from "./routes/Finish.js";
 // Style imports
-import "@sass/audiovis.io.sass";
+import "../sass/audiovis.io.sass";
 
-const Harvester = () => {
+const AudiovisIO = ({onEnter, onBack, entered}) => {
   const [mappingJson, setMappingJson] = useState(undefined);
 
   const initServiceWorker = () => {
@@ -41,32 +41,40 @@ const Harvester = () => {
   });
 
   return (
-    <Router
-      basename={
-        String(window.location).includes("/__/")
-          ? "/__/harvester/harvester.html"
-          : ""
-      }
-    >
-      <Switch>
-        <Route exact path="/">
-          <Start />
-        </Route>
-        <Route path="/flow">
-          <Flow
-            onFinish={(mappingJson, history) => {
-              setMappingJson(mappingJson);
-              history.push("/result");
-            }}
-          />
-        </Route>
-        <Route path="/result">
-          <Finish json={mappingJson} />
-        </Route>
-      </Switch>
-    </Router>
-  );
+    <div className="audiovisio-wrapper">
+      <Router
+               basename={"/audiovisio"}
+             >
+               <Switch>
+                 <Route exact path="/">
+                   <Start onClick={onEnter}/>
+                 </Route>
+                 <Route path="/flow">
+                   <Flow
+                     onFinish={(mappingJson, history) => {
+                       setMappingJson(mappingJson);
+                       history.push("/result");
+                     }}
+                   />
+                 </Route>
+                 <Route path="/result">
+                   <Finish json={mappingJson} />
+                 </Route>
+               </Switch>
+      </Router>
+      </div>
+    );
 };
 
-const mount = document.querySelector("#mount");
-ReactDOM.render(<Harvester />, mount);
+export default AudiovisIO;
+
+// export default ({onEnter}) => {
+//   return (
+//     <div onClick={onEnter} style={{width: "100vw", height: "100vh", background: "red", position: "fixed", top: 0}}>
+//       TEST
+//     </div>
+//   )
+// }
+
+// const mount = document.querySelector("#mount");
+// ReactDOM.render(<Harvester />, mount);

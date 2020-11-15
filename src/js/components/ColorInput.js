@@ -4,10 +4,10 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import TWEEN from "@tweenjs/tween.js";
 // Style imports
-import "@sass/components/ColorInput.sass";
+import "../../sass/components/ColorInput.sass";
 // GLSL imports
-import vertexShader from "@glsl/colorcube.vert.glsl";
-import fragmentShader from "@glsl/colorcube.frag.glsl";
+import vertexShader from "../../glsl/colorcube.vert.glsl";
+import fragmentShader from "../../glsl/colorcube.frag.glsl";
 
 export default ({ onChange, onSelect }) => {
   const canvasRef = useRef();

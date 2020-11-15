@@ -1,7 +1,7 @@
 // node_modules imports
 import React from "react";
 // Style imports
-import "@sass/components/Progressbar.sass";
+import "../../sass/components/Progressbar.sass";
 
 const Progressbar = ({ percent, completedCount, scenarioCount }) => {
   return (

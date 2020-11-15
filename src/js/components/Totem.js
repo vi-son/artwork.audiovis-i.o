@@ -5,14 +5,14 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { PositionalAudioHelper } from "three/examples/jsm/helpers/PositionalAudioHelper.js";
 import md5 from "blueimp-md5";
 // Local imports
-import createLineGeometry from "@utils/createLineGeometry.js";
+import createLineGeometry from "../utils/createLineGeometry.js";
 // Style imports
-import "@sass/components/Totem.sass";
+import "../../sass/components/Totem.sass";
 // GLSL imports
-import tubeVertexShader from "@glsl/tubes.vert.glsl";
-import tubeFragmentShader from "@glsl/tubes.frag.glsl";
-import backgroundVertexShader from "@glsl/background.vert.glsl";
-import backgroundFragmentShader from "@glsl/background.frag.glsl";
+import tubeVertexShader from "../../glsl/tubes.vert.glsl";
+import tubeFragmentShader from "../../glsl/tubes.frag.glsl";
+import backgroundVertexShader from "../../glsl/background.vert.glsl";
+import backgroundFragmentShader from "../../glsl/background.frag.glsl";
 
 const remap = (v, a, b, c, d) => {
   const newval = ((v - a) / (b - a)) * (d - c) + c;

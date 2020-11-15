@@ -4,13 +4,13 @@ import { Link } from "react-router-dom";
 // Local imports
 import Layout from "../Layout.js";
 // SVG imports
-import Illustration from "@assets/svg/audiovisio/title-illustration.svg";
+import Illustration from "../../../assets/svg/audiovisio/title-illustration.svg";
 // Style imports
-import "@sass/routes/Start.sass";
+import "../../sass/routes/Start.sass";
 
-function Start() {
+function Start({onClick}) {
   return (
-    <Layout className="audiovis-io start">
+    <Layout className="audiovis-io start" onClick={onClick}>
       <main className="two-columns">
         <div className="left">
           <h2 className="heading">Willkommen</h2>

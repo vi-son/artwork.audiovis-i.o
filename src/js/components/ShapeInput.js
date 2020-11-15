@@ -3,7 +3,7 @@ import React, { useRef, useState, useEffect } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 // Style imports
-import "@sass/components/ShapeInput.sass";
+import "../../sass/components/ShapeInput.sass";
 
 export default ({ onSelect }) => {
   const canvasRef = useRef();

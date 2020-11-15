@@ -3,18 +3,18 @@ import React, { useRef, useState, useEffect } from "react";
 import { Link, useHistory } from "react-router-dom";
 // Local imports
 import Layout from "../Layout.js";
-import AudioPlayer from "@components/AudioPlayer.js";
-import SelectBox from "@components/SelectBox.js";
-import ColorInput from "@components/ColorInput.js";
-import FeelingsInput from "@components/FeelingsInput.js";
-import ShapeInput from "@components/ShapeInput.js";
-import Progressbar from "@components/Progressbar.js";
+import AudioPlayer from "../components/AudioPlayer.js";
+import SelectBox from "../components/SelectBox.js";
+import ColorInput from "../components/ColorInput.js";
+import FeelingsInput from "../components/FeelingsInput.js";
+import ShapeInput from "../components/ShapeInput.js";
+import Progressbar from "../components/Progressbar.js";
 // SVG imports
-import IconColor from "@assets/svg/audiovisio/color.svg";
-import IconFeeling from "@assets/svg/audiovisio/feeling.svg";
-import IconShape from "@assets/svg/audiovisio/shape.svg";
+import IconColor from "../../../assets/svg/audiovisio/color.svg";
+import IconFeeling from "../../../assets/svg/audiovisio/feeling.svg";
+import IconShape from "../../../assets/svg/audiovisio/shape.svg";
 // Style imports
-import "@sass/routes/Flow.sass";
+import "../../sass/routes/Flow.sass";
 
 const Flow = ({ onFinish }) => {
   const history = useHistory();
@@ -274,7 +274,7 @@ const Flow = ({ onFinish }) => {
         scenarioCount={scenarioCount}
       />
 
-      {mappingDebug}
+      // {mappingDebug}
     </Layout>
   );
 };

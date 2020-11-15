@@ -4,7 +4,7 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import TWEEN from "@tweenjs/tween.js";
 // Style imports
-import "@sass/components/FeelingsInput.sass";
+import "../../sass/components/FeelingsInput.sass";
 
 export default ({ onSelect }) => {
   const [feeling, setFeeling] = useState("");
