@@ -19,7 +19,7 @@ module.exports = env => {
       index: path.resolve(__dirname, "src/js/index.js")
     },
     output: {
-      path: path.resolve(__dirname, "dist"),
+      path: path.resolve(__dirname, "build"),
       publicPath: "/",
       filename: "[name].bundle.js",
       chunkFilename: "[name].bundle.js"
