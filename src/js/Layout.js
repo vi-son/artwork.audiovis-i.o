@@ -2,14 +2,17 @@
 import React from "react";
 import { Link } from "react-router-dom";
 // Style imports
-import "../sass/Layout.AudiovisIO.sass";
+import "../sass/components/Layout.sass";
 
-function Layout({ children, style, className, onClick }) {
+const Layout = ({ children, style, className, onBack }) => {
   return (
-    <div className={className} style={style} onClick={onClick}>
+    <div className={["layout", className].join(" ")} style={style}>
       {children}
+      {/* <button className="btn-to-meta" onClick={onBack}> */}
+      {/*   Zurück */}
+      {/* </button> */}
     </div>
   );
-}
+};
 
 export default Layout;

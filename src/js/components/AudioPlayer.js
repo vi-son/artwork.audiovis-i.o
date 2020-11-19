@@ -6,10 +6,8 @@ import "../../sass/components/AudioPlayer.sass";
 class AudioPlayer extends React.Component {
   constructor(props) {
     super(props);
-    this.audio = new Audio(this.props.audiosrc);
-    this.changeTime = this.changeTime.bind(this);
-    this.setDuration = this.setDuration.bind(this);
     this.setupAudio();
+    this.changeTime = this.changeTime.bind(this);
     this.state = {
       playing: false,
       duration: 0,
@@ -62,24 +60,23 @@ class AudioPlayer extends React.Component {
     clearInterval(this.state.fadeInterval);
   }
 
-  setDuration() {
-    this.setState({
-      duration: this.audio.duration
-    });
-  }
+  setDuration() {}
 
   setupAudio() {
+    this.audio = new Audio(this.props.audiosrc);
     this.audio.loop = true;
     this.audio.volume = 0.0;
-    this.audio.addEventListener("canplaythrough", this.setDuration);
+    this.audio.preload = "auto";
+    this.audio.addEventListener("canplaythrough", () => {
+      this.setState({
+        duration: this.audio.duration
+      });
+    });
     this.audio.ontimeupdate = this.timeUpdate.bind(this);
-    this.audio.src = this.props.audiosrc;
   }
 
   componentDidUpdate(nextProps) {
-    if (!this.audio.src.includes(nextProps.audiosrc)) {
-      this.audio.src = nextProps.audiosrc;
-    }
+    if (nextProps.audiosrc !== this.props.audiosrc) this.setupAudio();
   }
 
   stopAudio() {
@@ -147,6 +144,7 @@ class AudioPlayer extends React.Component {
       this.state.currentTime / this.state.duration
         ? (this.state.currentTime / this.state.duration) * 100
         : 0;
+
     return (
       <div className="audio-player">
         <svg width={200} height={200}>

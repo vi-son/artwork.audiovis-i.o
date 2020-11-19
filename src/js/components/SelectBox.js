@@ -21,7 +21,9 @@ export default class SelectBox extends React.Component {
       <div className="select">
         <div className="options">
           <div className="description">
-            <h3>2. Zuordnung</h3>
+            <h3>
+              <span className="emoji">🧩</span> 2. Zuordnung
+            </h3>
             <article>Wähle eine Kategorie</article>
           </div>
           <div className="icons">

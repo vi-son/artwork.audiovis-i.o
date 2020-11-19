@@ -1,29 +1,54 @@
 @import ../rouge/1-settings/_colors.sass
 
 .finish
-  display: grid
+  max-height: 100vh !important
   height: 100vh
-  grid-template-columns: 40% 60%
-  .textblock
-    padding: 60px
-    color: var(--color-darkness)
-    .title
-      margin-bottom: 40px
+  .two-columns
+    display: grid
+    height: 100vh
+    grid-template-columns: 40% 60%
+    padding-bottom: 0
+
+    .textblock
+      padding: 60px
+      padding-top: 200px
+      color: var(--color-darkness)
+      display: flex
+      flex-direction: column
+      justify-content: space-between
+      .title
+        margin-bottom: 40px
+        display: flex
+        flex-direction: column
+        line-height: 1.0
+      .emoji
+        font-size: 5vw
+      .buttons
+        display: flex
+        flex-direction: column
+        button
+          transition: background 500ms ease
+          background: var(--color-curacao)
+          color: var(--color-snow)
+          &:hover
+            background: var(--color-darkness)
+
+        .btn-primary
+          background: var(--color-curacao)
+          color: var(--color-snow)
+          padding: 40px
+          margin: 0
+
+        .btn-secondary
+          margin: 0
+          background: none
+          color: var(--color-darkness)
+          padding: 20px 40px
+          margin-top: 10px
+          &:hover
+            color: var(--color-curacao)
+            background: none
 
   .totem
-    background: var(--color-ultradark)
+    background: var(--color-darkness)
 
-  .buttons
-    position: fixed
-    left: 40px
-    width: 30%
-    button
-      transition: background 500ms ease
-      background: var(--color-curacao)
-      color: var(--color-snow)
-      &:hover
-        background: var(--color-darkness)
-
-
-.finish-canvas-wrapper
-  flex-grow: 1

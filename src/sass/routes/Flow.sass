@@ -1,10 +1,10 @@
 .flow
   display: grid
+  width: 100vw
   grid-template-columns: 2fr 5fr
   .left
     margin-bottom: 80px
     display: flex
-    flex-grow: 1
     flex-direction: column
     justify-content: space-between
     align-items: center
@@ -16,28 +16,60 @@
         color: var(--color-darkness)
     .empty
       height: 50vh
+
   .right
     margin-bottom: 80px
 
-.button-wrapper
-  position: fixed
-  right: 5vw
-  bottom: 5vw
-  display: flex
-  flex-direction: column
+
   .description
-    article,
-    h4
+    text-align: left
+    h3
+      font-size: 1.9375rem
+      text-align: left
       color: var(--color-darkness)
-  .next-sample
-    background: var(--color-curacao)
-    color: var(--color-snow)
-    transition: background 200ms ease
-    &:hover
+      .emoji
+        width: 52px
+        display: inline-block
+    article
+      margin-left: 60px
+      color: var(--color-darkness)
+
+  .button-wrapper
+    position: fixed
+    right: 5vw
+    bottom: 5vw
+    display: flex
+    flex-direction: column
+    .next-sample
+      background: var(--color-curacao)
       color: var(--color-snow)
-      background: var(--color-darkness)
-    &:disabled
-      opacity: 0.05
-      background: 0
+      transition: background 200ms ease
       &:hover
-        box-shadow: none
+        color: var(--color-snow)
+        background: var(--color-darkness)
+      &:disabled
+        opacity: 0.05
+        background: 0
+      &:hover
+          box-shadow: none
+
+  .mapping-debug
+    position: fixed
+    left: 0
+    bottom: 0
+    z-index: 999
+    background: rgba(0, 0, 0, 0.8)
+    max-width: 50ch
+    color: white
+    font-size: 0.9rem
+    padding: 20px
+    word-wrap: break-word
+    hr
+      opacity: 0.2
+      margin: 40px 0
+    *
+      color: white
+    .mapping
+      display: flex
+      flex-direction: column
+      margin-bottom: 20px

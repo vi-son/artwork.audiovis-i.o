@@ -1,45 +1,55 @@
 // node_modules imports
 import React from "react";
 import { Link } from "react-router-dom";
-// Local imports
-import Layout from "../Layout.js";
 // SVG imports
 import Illustration from "../../../assets/svg/audiovisio/title-illustration.svg";
 // Style imports
 import "../../sass/routes/Start.sass";
 
-function Start({onClick}) {
+const Start = ({ onBack }) => {
   return (
-    <Layout className="audiovis-io start" onClick={onClick}>
-      <main className="two-columns">
-        <div className="left">
-          <h2 className="heading">Willkommen</h2>
-          <article className="text">
-            Herzlich willkommen, du bist im Begriff Kunst zu machen. In den
-            nächsten Minuten kannst du uns helfen, kreativ zu sein. Kreativität
-            braucht eine Grundlage, eine Inspiration. Und diese Grundlage wollen
-            wir hier schaffen. Der Mixing Senses-Harvester ist ein freundliches
-            Datensammeltool. Wir lassen dich Dinge hören und sehen - und du
-            kannst uns sagen, was du dazu fühlst. Das machst du, indem du einen
-            Farbwert auswählst oder ein passendes Wort schreibst. Später werden
-            diese Eingaben eine Datenbasis ergeben, die wir zur Visualisierung
-            verwenden können; in welcher Form auch immer (verfremdend,
-            inspirierend, erschütternd, faszinierend). Während unserer
-            Ausstellung zeigen wir unsere Ergebnisse in spannenden Exponaten.
-            Yeah!
-          </article>
+    <main className="two-columns">
+      <div className="left">
+        <h2 className="heading">audiovis i/o</h2>
+        <article className="text">
+          <b>Herzlich willkommen</b>, du bist im Begriff Kunst zu machen.
+          <br />
+          <br />
+          In den nächsten Minuten kannst du uns helfen, kreativ zu sein.
+          Audiovis I/O ist ein audiovisuelle Experiment. Wir lassen dich Samples
+          hören, zu denen du uns sagen kannst, was du dazu fühlst, spürst oder
+          dir vorstellst.
+          <br />
+          <br />
+          Ein Sample ist ein <b>kurzer Musikschnipsel</b>, der beliebig kurz
+          oder lang sein kann und in andere Kontexte überführt wird – das nennt
+          sich dann musikalische Weiterverarbeitung.
+          <b>
+            Zu jedem Sample geben wir dir drei Möglichkeiten, von denen du eine
+            auswählst, um dem Sample deinen Eindruck zuzuordnen
+          </b>
+          . Das machst du, indem du eine Emotion auswählst, einen Farbwert
+          findest oder eine passende Form aussuchst. Das Interface lässt sich
+          ganz einfach mit der Maus bedienen.
+          <br />
+          <br />
+          Alle inhaltlichen Infos hierzu findest du im{" "}
+          <a onClick={onBack}>Ausstellungsbereich</a>.
+          <br />
+          <br />
+          <b>Viel Spaß</b>
+        </article>
+      </div>
+      <div className="right">
+        <div className="illustration-wrapper">
+          <Illustration />
         </div>
-        <div className="right">
-          <div className="illustration-wrapper">
-            <Illustration />
-          </div>
-          <Link className="start-button" to="/flow">
-            Loslegen
-          </Link>
-        </div>
-      </main>
-    </Layout>
+        <Link className="start-button" to="/flow">
+          Loslegen
+        </Link>
+      </div>
+    </main>
   );
-}
+};
 
 export default Start;

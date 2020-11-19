@@ -16,7 +16,7 @@ module.exports = env => {
       historyApiFallback: true
     },
     entry: {
-      index: path.resolve(__dirname, "src/js/audiovis.io.js")
+      index: path.resolve(__dirname, "src/js/index.js")
     },
     output: {
       path: path.resolve(__dirname, "dist"),

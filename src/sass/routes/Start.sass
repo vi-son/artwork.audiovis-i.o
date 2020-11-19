@@ -1,8 +1,12 @@
 @import ../rouge/1-settings/_colors
 
 .start
+  display: flex
   .two-columns
-    padding: 60px
+    padding: 120px
+    display: grid
+    grid-template-columns: 1fr 1fr
+    grid-gap: 120px
     .left
       display: flex
       flex-direction: column
@@ -13,8 +17,14 @@
         color: var(--color-darkness)
       .text
         color: var(--color-darkness)
+        a
+          cursor: pointer
+          color: var(--color-curacao)
+          background: none
+          &:hover
+            background: var(--color-curacao)
+            color: var(--color-snow)
     .right
-      height: 90vh
       display: flex
       flex-direction: column
       justify-content: flex-end
