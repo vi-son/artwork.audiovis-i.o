@@ -24,7 +24,9 @@ export default class SelectBox extends React.Component {
             <h3>
               <span className="emoji">🧩</span> 2. Zuordnung
             </h3>
-            <article>Wähle eine Kategorie</article>
+            <article>
+              Entscheide dich für <b>eine</b> Kategorie
+            </article>
           </div>
           <div className="icons">
             {this.props.options.map((o, i) => {
