@@ -46,7 +46,7 @@ jobs:
         options: ''
         ssh_options: ''
         src: 'build/'
-        dest: 'guido@:kohoutek.uberspace.de/var/www/virtual/guido/audiovisio.mixing-senses.art'
+        dest: 'guido@kohoutek.uberspace.de:/var/www/virtual/guido/audiovisio.mixing-senses.art'
 
     - name: Display status from deploy
       run: echo "${{ steps.deploy.outputs.status }}"
