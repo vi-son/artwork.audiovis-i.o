@@ -284,7 +284,7 @@ class Flow extends React.Component {
           <></>
         )}
         <Link to="/result">Weiter</Link>
-        {mappingDebug}
+        {process.env.NODE_ENV === "debug" ? mappingDebug : <></>}
         <Progressbar
           percent={(this.state.completedCount / this.state.scenarioCount) * 100}
           completedCount={this.state.completedCount}
