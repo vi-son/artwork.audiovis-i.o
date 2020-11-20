@@ -17,89 +17,46 @@ import Finish from "./routes/Finish.js";
 // Style imports
 import "../sass/AudiovisIO.sass";
 
-// const AudiovisIOold = ({ onEnter, onBack, entered }) => {
-//   const [mappingJson, setMappingJson] = useState(undefined);
+class AudiovisIO extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      mapping: undefined
+    };
+  }
 
-//   const initServiceWorker = () => {
-//     if ("serviceWorker" in navigator) {
-//       window.addEventListener("load", () => {
-//         navigator.serviceWorker
-//           .register("/sw.js")
-//           .then(registration => {
-//             console.log("Serviceworker registered: ", registration);
-//           })
-//           .catch(registrationError => {
-//             console.log(
-//               "Serviceworker registration failed: ",
-//               registrationError
-//             );
-//           });
-//       });
-//     }
-//   };
+  render() {
+    return (
+      <div className="audiovisio-wrapper">
+        <Router basename={"/audiovis-io"}>
+          <Switch>
+            <Route exact path="/">
+              <Layout className="start" onBack={this.props.onBack}>
+                <Start onClick={this.props.onEnter} />
+              </Layout>
+            </Route>
 
-//   const webGLAvailable = WEBGL.isWebGLAvailable();
-//   if (!webGLAvailable) {
-//     return <h1>WEBGL.getWebGLErrorMessage()</h1>;
-//   }
+            <Route exact path="/flow">
+              <Layout className="layout-flow" onBack={this.props.onBack}>
+                <Flow
+                  onFinish={(mapping, history) => {
+                    this.setState({ mapping: mapping });
+                    history.push("/result");
+                  }}
+                />
+              </Layout>
+            </Route>
 
-//   return (
-//     <div className="audiovisio-wrapper">
-//       <Router basename={"/audiovis-io"}>
-//         <Switch>
-//           <Route exact path="/">
-//             <Start onClick={onEnter} />
-//           </Route>
-//           <Route path="/flow">
-//             <Flow
-//               onFinish={(mappingJson, history) => {
-//                 setMappingJson(mappingJson);
-//                 history.push("/result");
-//               }}
-//             />
-//           </Route>
-//           <Route path="/result">
-//             <Finish json={mappingJson} />
-//           </Route>
-//         </Switch>
-//       </Router>
-//     </div>
-//   );
-// };
-
-const AudiovisIO = ({ onEnter, onBack }) => {
-  const [mapping, setMapping] = useState({});
-
-  return (
-    <div className="audiovisio-wrapper">
-      <Router basename={"/audiovis-io"}>
-        <Switch>
-          <Route exact path="/">
-            <Layout className="start" onBack={onBack}>
-              <Start onClick={onEnter} />
-            </Layout>
-          </Route>
-
-          <Route exact path="/flow">
-            <Layout className="layout-flow" onBack={onBack}>
-              <Flow
-                onFinish={(mapping, history) => {
-                  setMapping(mapping);
-                  history.push("/result");
-                }}
-              />
-            </Layout>
-          </Route>
-
-          <Route exact path="/result">
-            <Layout className="finish" onBack={onBack}>
-              <Finish mapping={mapping} />
-            </Layout>
-          </Route>
-        </Switch>
-      </Router>
-    </div>
-  );
-};
+            <Route exact path="/result">
+              <Layout className="finish" onBack={this.props.onBack}>
+                <Finish mapping={this.state.mapping} />
+              </Layout>
+            </Route>
+          </Switch>
+        </Router>
+      </div>
+    );
+  }
+}
 
 export default AudiovisIO;

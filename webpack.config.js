@@ -64,6 +64,18 @@ module.exports = env => {
           ]
         },
         {
+          test: /\.mp3$/,
+          use: [
+            {
+              loader: "file-loader",
+              options: {
+                name: "[name].[ext]",
+                outputPath: "assets/audio/"
+              }
+            }
+          ]
+        },
+        {
           test: /\.svg$/,
           use: [
             {

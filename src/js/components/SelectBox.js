@@ -33,7 +33,12 @@ export default class SelectBox extends React.Component {
                   key={o}
                   className={[
                     "icon",
-                    i === this.state.selection ? "selected" : ""
+                    this.state.selection !== -1 && i === this.state.selection
+                      ? "selected"
+                      : "",
+                    this.state.selection !== -1 && i !== this.state.selection
+                      ? "not-selected"
+                      : ""
                   ].join(" ")}
                   onClick={() => {
                     this.setState({ selection: i });
