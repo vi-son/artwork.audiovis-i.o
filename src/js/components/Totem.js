@@ -8,6 +8,8 @@ import md5 from "blueimp-md5";
 import createLineGeometry from "../utils/createLineGeometry.js";
 // Style imports
 import "../../sass/components/Totem.sass";
+// SVG imports
+import IconMouse from "../../../assets/svg/mouse.svg";
 // GLSL imports
 import tubeVertexShader from "../../glsl/tubes.vert.glsl";
 import tubeFragmentShader from "../../glsl/tubes.frag.glsl";
@@ -19,7 +21,7 @@ const remap = (v, a, b, c, d) => {
   return newval;
 };
 
-export default ({ mapping }) => {
+export default ({ mapping, onResize }) => {
   const canvasRef = useRef();
   const canvasWrapperRef = useRef();
 
@@ -61,9 +63,11 @@ export default ({ mapping }) => {
       };
     });
 
-  console.log(`# Color Mappings: ${colorMappings.length}`);
-  console.log(`# Shape Mappings: ${shapeMappings.length}`);
-  console.log(`# Feeling Mappings: ${feelingMappings.length}`);
+  if (process.env.NODE_ENV === "debug") {
+    console.log(`# Color Mappings: ${colorMappings.length}`);
+    console.log(`# Shape Mappings: ${shapeMappings.length}`);
+    console.log(`# Feeling Mappings: ${feelingMappings.length}`);
+  }
 
   useEffect(() => {
     // Size
@@ -169,6 +173,7 @@ export default ({ mapping }) => {
     const audioLoader = new THREE.AudioLoader();
     // Show audio sources
     const audioVisualizerCubes = [];
+    let allLoaded = false;
     mapping.map((c, i) => {
       const sampleFilepath = `${samplesFolder}${c.sample}`;
       const positionalAudio = new THREE.PositionalAudio(listener);
@@ -176,11 +181,15 @@ export default ({ mapping }) => {
       audioLoader.load(sampleFilepath, function(buffer) {
         positionalAudio.setBuffer(buffer);
         positionalAudio.setLoop(true);
-        positionalAudio.setVolume(0.2);
-        positionalAudio.play();
+        positionalAudio.setVolume(0.7);
+        // positionalAudio.play();
         sounds.push(positionalAudio);
         analyser.smoothingTimeConstant = 0.9;
         analysers.push(analyser);
+        if (i === mapping.length - 1) {
+          allLoaded = true;
+          console.log("all loaded");
+        }
       });
       var geometry = new THREE.BoxBufferGeometry(0.5, 0.5, 0.5);
       var material = new THREE.MeshBasicMaterial({
@@ -208,7 +217,6 @@ export default ({ mapping }) => {
       flatShading: true
     });
     feelingMappings.map((f, i) => {
-      console.log(f);
       const point = f.feeling.point ? f.feeling.point : { x: 0, y: 0, z: 0 };
       const position = new THREE.Vector3(point.x, point.y, point.z);
       const sphereGeometry = new THREE.SphereBufferGeometry(0.26, 32, 32);
@@ -370,12 +378,28 @@ export default ({ mapping }) => {
         let newSize = canvasWrapperRef.current.getBoundingClientRect();
         camera.aspect = newSize.width / newSize.height;
         camera.updateProjectionMatrix();
+        backgroundCamera.aspect = newSize.width / newSize.height;
+        backgroundCamera.updateProjectionMatrix();
         renderer.setSize(newSize.width, newSize.height);
       }
     }
     const resizeHandler = window.addEventListener(
       "resize",
       onWindowResize,
+      false
+    );
+
+    function onPointerUp() {
+      if (allLoaded) {
+        for (let i = 0; i < sounds.length; i++) {
+          sounds[i].play();
+        }
+        allLoaded = false;
+      }
+    }
+    const pointerUpHandler = window.addEventListener(
+      "pointerup",
+      onPointerUp,
       false
     );
 
@@ -455,8 +479,15 @@ export default ({ mapping }) => {
           prepareDownload(rendering);
         }}
       >
-        Download
+        <span className="text">Schnappschuss</span>
+        <span className="emoji">📷</span>
       </button>
+      <div className="interaction-explanation">
+        <IconMouse />
+        <article className="text">
+          Klick und ziehen zum Drehen Mausrad für Zoom
+        </article>
+      </div>
     </div>
   );
 };

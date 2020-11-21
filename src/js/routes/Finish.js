@@ -11,6 +11,20 @@ import "../../sass/routes/Finish.sass";
 class Finish extends React.Component {
   constructor(props) {
     super(props);
+    // JSON
+    this.exampleMapping = require("../../json/08f406489239afeddc1391e4125cf37b.json");
+    this.prepareDownload = this.prepareDownload.bind(this);
+  }
+
+  prepareDownload() {
+    const downloadLink = document.createElement("a");
+    const dataStr =
+      "data:text/json;charset=utf-8," +
+      encodeURIComponent(JSON.stringify(this.props.mapping));
+    downloadLink.href = dataStr;
+    downloadLink.download = `${md5(JSON.stringify(this.props.mapping))}.json`;
+    document.body.append(downloadLink);
+    downloadLink.click();
   }
 
   render() {
@@ -34,16 +48,16 @@ class Finish extends React.Component {
               <Link className="btn-primary" to="/flow">
                 Noch eine Runde
               </Link>
-              <button className="btn-secondary" onClick={() => {}}>
+              <button className="btn-secondary" onClick={this.prepareDownload}>
                 download daten
               </button>
             </div>
           </div>
           <div className="totem">
-            {this.props.mapping.length > 0 ? (
-              <Totem mapping={this.props.mapping}></Totem>
+            {this.props.mapping !== undefined ? (
+              <Totem ref={this.totemRef} mapping={this.props.mapping} />
             ) : (
-              <></>
+              <Totem ref={this.totemRef} mapping={this.exampleMapping} />
             )}
           </div>
         </main>
