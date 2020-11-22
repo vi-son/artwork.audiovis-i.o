@@ -200,6 +200,10 @@ export default ({ onChange, onSelect, style }) => {
     render();
 
     return () => {
+      while (scene.children.length > 0) {
+        scene.remove(scene.children[0]);
+      }
+      renderer.dispose();
       window.removeEventListener("resize", resizeHandler);
       window.removeEventListener("pointermove", pointerMoveHandler);
       window.removeEventListener("pointerup", pointerUpHandler);

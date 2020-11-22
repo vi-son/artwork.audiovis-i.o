@@ -132,7 +132,6 @@ export default ({ mapping, onResize }) => {
           return new THREE.Vector3();
         }
       });
-    console.log(colorToUniformsArray);
     const numSides = 4;
     const subdivisions = 50;
     const tubeMaterial = new THREE.RawShaderMaterial({
@@ -187,7 +186,6 @@ export default ({ mapping, onResize }) => {
         positionalAudio.setBuffer(buffer);
         positionalAudio.setLoop(true);
         positionalAudio.setVolume(0.7);
-        // positionalAudio.play();
         sounds.push(positionalAudio);
         analyser.smoothingTimeConstant = 0.9;
         analysers.push(analyser);
@@ -475,6 +473,10 @@ export default ({ mapping, onResize }) => {
     render();
 
     return () => {
+      while (scene.children.length > 0) {
+        scene.remove(scene.children[0]);
+      }
+      renderer.dispose();
       sounds.forEach(s => {
         s.stop();
         window.removeEventListener("resize", resizeHandler);
