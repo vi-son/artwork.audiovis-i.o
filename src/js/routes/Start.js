@@ -47,6 +47,12 @@ const Start = ({ onBack }) => {
         <Link className="start-button" to="/flow">
           Loslegen
         </Link>
+        <a
+          className="btn-secondary"
+          href="https://exhibition.mixing-senses.art"
+        >
+          Zurück zur Ausstellung
+        </a>
       </div>
     </main>
   );

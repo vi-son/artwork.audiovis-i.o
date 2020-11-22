@@ -52,7 +52,7 @@ class Finish extends React.Component {
                 className="btn-secondary"
                 href="https://exhibition.mixing-senses.art"
               >
-                Zurück zum Foyer
+                Zurück zur Ausstellung
               </a>
               <button className="btn-secondary" onClick={this.prepareDownload}>
                 download daten
