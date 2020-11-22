@@ -45,7 +45,7 @@ const Start = ({ onBack }) => {
           <Illustration />
         </div>
         <Link className="start-button" to="/flow">
-          Loslegen
+          Loslegen 🌚
         </Link>
         <a
           className="btn-secondary"
