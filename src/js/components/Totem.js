@@ -25,6 +25,10 @@ export default ({ mapping, onResize }) => {
   const canvasRef = useRef();
   const canvasWrapperRef = useRef();
 
+  const getRandomIdx = count => {
+    return Math.floor(Math.random(), count);
+  };
+
   const prepareDownload = imageData => {
     const downloadLink = document.createElement("a");
     const dataStr = imageData;
@@ -63,7 +67,7 @@ export default ({ mapping, onResize }) => {
       };
     });
 
-  if (process.env.NODE_ENV === "debug") {
+  if (process.env.NODE_ENV === "development") {
     console.log(`# Color Mappings: ${colorMappings.length}`);
     console.log(`# Shape Mappings: ${shapeMappings.length}`);
     console.log(`# Feeling Mappings: ${feelingMappings.length}`);
@@ -128,6 +132,7 @@ export default ({ mapping, onResize }) => {
           return new THREE.Vector3();
         }
       });
+    console.log(colorToUniformsArray);
     const numSides = 4;
     const subdivisions = 50;
     const tubeMaterial = new THREE.RawShaderMaterial({
@@ -207,14 +212,24 @@ export default ({ mapping, onResize }) => {
     });
 
     //// FEELING MAPPING TOTEM
+    let feelingColor = 0x2b13ff;
+    if (colors.length > 0) {
+      const randomColorVec = colors[getRandomIdx(colors.length)];
+      const randomColor = new THREE.Color(
+        randomColorVec.x / 3.0,
+        randomColorVec.y / 3.0,
+        randomColorVec.z / 3.0
+      );
+      feelingColor = randomColor;
+    }
     const feelingCurves = [];
     const feelingsGroup = new THREE.Group();
     const feelingSpheres = [];
-    var bezierMaterial = new THREE.LineBasicMaterial({ color: 0x2b13ff });
-    var feelingMaterial = new THREE.MeshLambertMaterial({
-      color: 0x2b13ff,
+    var bezierMaterial = new THREE.LineBasicMaterial({ color: feelingColor });
+    var feelingMaterial = new THREE.MeshPhysicalMaterial({
+      color: feelingColor,
       side: THREE.DoubleSide,
-      flatShading: true
+      flatShading: false
     });
     feelingMappings.map((f, i) => {
       const point = f.feeling.point ? f.feeling.point : { x: 0, y: 0, z: 0 };

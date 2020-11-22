@@ -6,7 +6,7 @@ import TWEEN from "@tweenjs/tween.js";
 // Style imports
 import "../../sass/components/FeelingsInput.sass";
 
-export default ({ onSelect }) => {
+export default ({ onSelect, style }) => {
   const [feeling, setFeeling] = useState("");
   const [hoverFeeling, setHoverFeeling] = useState("");
   const [svgPoint, setSvgPoint] = useState([0, 0]);

@@ -5,7 +5,7 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 // Style imports
 import "../../sass/components/ShapeInput.sass";
 
-export default ({ onSelect }) => {
+export default ({ onSelect, style, active }) => {
   const canvasRef = useRef();
   const [selectedShape, setSelectedShape] = useState("");
 
@@ -112,7 +112,7 @@ export default ({ onSelect }) => {
         if (onSelect) onSelect(hit[0].object.name);
       }
     }
-    const clickHandler = window.addEventListener("click", onClick);
+    const clickHandler = window.addEventListener("pointerup", onClick);
 
     function onUpdate() {
       raycaster.setFromCamera(mousePosition, camera);
@@ -157,8 +157,12 @@ export default ({ onSelect }) => {
     render();
 
     return () => {
+      while (scene.children.length > 0) {
+        scene.remove(scene.children[0]);
+      }
+      renderer.dispose();
       window.removeEventListener("resize", resizeHandler);
-      window.removeEventListener("click", clickHandler);
+      window.removeEventListener("pointerup", clickHandler);
       window.removeEventListener("pointermove", pointerMoveHandler);
     };
   }, []);

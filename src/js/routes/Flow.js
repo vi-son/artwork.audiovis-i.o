@@ -73,6 +73,7 @@ class Flow extends React.Component {
     this.groups = ["synthesizer", "guitar", "chords", "bass", "rhythm"];
 
     this.state = {
+      selectedIdx: -1,
       initialized: false,
       groups: this.groups,
       scenarioCount: 5,
@@ -142,6 +143,9 @@ class Flow extends React.Component {
     const mappingDebug = (
       <div className="mapping-debug">
         <span>{this.state.completedCount}</span>
+        <br />
+        <span>{this.state.currentMapping.type}</span>
+        <span>{JSON.stringify(this.state.currentMapping.mapping)}</span>
         <hr />
         <h5>Scenario count: {this.state.scenarioCount}</h5>
         <span>
@@ -203,27 +207,44 @@ class Flow extends React.Component {
               this.setState({
                 isColorReactive: i === 1,
                 currentMapping: Object.assign({}, this.state.currentMapping, {
-                  type: name
+                  type: name,
+                  mapping: undefined
                 })
               });
             }}
           >
             <FeelingsInput
+              style={{
+                display:
+                  this.state.currentMapping.type === "Gefühl" ? "" : "none"
+              }}
               onSelect={(feeling, point) => {
                 this.setState({
+                  selectedIdx: 0,
                   backgroundColor: "var(--color-snow)",
                   currentMapping: Object.assign({}, this.state.currentMapping, {
-                    mapping: { feeling: feeling, point: point }
+                    mapping: { type: feeling, point: point }
                   })
                 });
               }}
             />
             <ColorInput
+              style={{
+                display:
+                  this.state.currentMapping.type === "Farbe" ? "auto" : "none"
+              }}
               onChange={(s, r, g, b) => {
-                this.setState({ backgroundColor: s });
+                this.setState({
+                  selectedIdx: 1,
+                  backgroundColor: s,
+                  currentMapping: Object.assign({}, this.state.currentMapping, {
+                    mapping: [r, g, b]
+                  })
+                });
               }}
               onSelect={(r, g, b) => {
                 this.setState({
+                  selectedIdx: 1,
                   currentMapping: Object.assign({}, this.state.currentMapping, {
                     mapping: [r, g, b]
                   })
@@ -231,8 +252,14 @@ class Flow extends React.Component {
               }}
             />
             <ShapeInput
+              active={this.state.selectedIdx === 2}
+              style={{
+                display:
+                  this.state.currentMapping.type === "Form" ? "auto" : "none"
+              }}
               onSelect={shape => {
                 this.setState({
+                  selectedIdx: 2,
                   backgroundColor: "var(--color-snow)",
                   currentMapping: Object.assign({}, this.state.currentMapping, {
                     mapping: shape
@@ -284,7 +311,7 @@ class Flow extends React.Component {
           <></>
         )}
         <Link to="/result">Weiter</Link>
-        {process.env.NODE_ENV === "debug" ? mappingDebug : <></>}
+        {process.env.NODE_ENV === "development" ? mappingDebug : <></>}
         <Progressbar
           percent={(this.state.completedCount / this.state.scenarioCount) * 100}
           completedCount={this.state.completedCount}

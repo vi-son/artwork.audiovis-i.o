@@ -9,7 +9,7 @@ import "../../sass/components/ColorInput.sass";
 import vertexShader from "../../glsl/colorcube.vert.glsl";
 import fragmentShader from "../../glsl/colorcube.frag.glsl";
 
-export default ({ onChange, onSelect }) => {
+export default ({ onChange, onSelect, style }) => {
   const canvasRef = useRef();
   const canvasWrapperRef = useRef();
   const [hue, setHue] = useState(128);

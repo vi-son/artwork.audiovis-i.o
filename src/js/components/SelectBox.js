@@ -54,9 +54,7 @@ export default class SelectBox extends React.Component {
             })}
           </div>
         </div>
-        {React.Children.map(this.props.children, (child, i) =>
-          i === this.state.selection ? child : null
-        )}
+        {this.props.children.filter((c, i) => i === this.state.selection)}
       </div>
     );
   }
