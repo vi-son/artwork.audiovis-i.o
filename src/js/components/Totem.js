@@ -186,6 +186,7 @@ export default ({ mapping, onResize }) => {
         positionalAudio.setBuffer(buffer);
         positionalAudio.setLoop(true);
         positionalAudio.setVolume(0.7);
+        positionalAudio.play();
         sounds.push(positionalAudio);
         analyser.smoothingTimeConstant = 0.9;
         analysers.push(analyser);
@@ -403,12 +404,12 @@ export default ({ mapping, onResize }) => {
     );
 
     function onPointerUp() {
-      if (allLoaded) {
-        for (let i = 0; i < sounds.length; i++) {
-          sounds[i].play();
-        }
-        allLoaded = false;
-      }
+      // if (allLoaded) {
+      //   for (let i = 0; i < sounds.length; i++) {
+      //     sounds[i].play();
+      //   }
+      //   allLoaded = false;
+      // }
     }
     const pointerUpHandler = window.addEventListener(
       "pointerup",
@@ -421,6 +422,7 @@ export default ({ mapping, onResize }) => {
     let $dt = 0;
     var render = function() {
       requestAnimationFrame(render);
+      if (!allLoaded) return;
       time = clock.getElapsedTime();
       $dt = clock.getDelta();
 

@@ -23,6 +23,25 @@ class AudiovisIO extends React.Component {
     this.state = {
       mapping: undefined
     };
+    this.initServiceWorker();
+  }
+
+  initServiceWorker() {
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker
+          .register("/sw.js")
+          .then(registration => {
+            console.log("Serviceworker registered: ", registration);
+          })
+          .catch(registrationError => {
+            console.log(
+              "Serviceworker registration failed: ",
+              registrationError
+            );
+          });
+      });
+    }
   }
 
   render() {
