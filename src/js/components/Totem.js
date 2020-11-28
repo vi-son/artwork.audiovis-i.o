@@ -491,23 +491,22 @@ export default ({ mapping, onResize }) => {
       <div className="canvas-wrapper" ref={canvasWrapperRef}>
         <canvas ref={canvasRef}></canvas>
       </div>
-      {/* <button */}
-      {/*   className="download-rendering" */}
-      {/*   onClick={() => { */}
-      {/*     var rendering = canvasRef.current.toDataURL(); */}
-      {/*     prepareDownload(rendering); */}
-      {/*   }} */}
-      {/* > */}
-      {/*   <span className="text">Schnappschuss</span> */}
-      {/*   <span className="emoji">📷</span> */}
-      {/* </button> */}
-
-      {/* <div className="interaction-explanation"> */}
-      {/*   <IconMouse /> */}
-      {/*   <article className="text"> */}
-      {/*     Klick und ziehen zum Drehen Mausrad für Zoom */}
-      {/*   </article> */}
-      {/* </div> */}
+      <button
+        className="download-rendering"
+        onClick={() => {
+          var rendering = canvasRef.current.toDataURL();
+          prepareDownload(rendering);
+        }}
+      >
+        <span className="text">Schnappschuss</span>
+        <span className="emoji">📷</span>
+      </button>
+      <div className="interaction-explanation">
+        <IconMouse />
+        <article className="text">
+          Klick und ziehen zum Drehen Mausrad für Zoom
+        </article>
+      </div>
     </div>
   );
 };
