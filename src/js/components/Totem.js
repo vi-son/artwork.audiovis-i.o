@@ -183,6 +183,7 @@ export default ({ mapping, onResize }) => {
     // Show audio sources
     const audioVisualizerCubes = [];
     let allLoaded = false;
+    const threeSounds = [];
     mapping.map((c, i) => {
       const sampleFilepath = `${samplesFolder}${c.sample}`;
       const positionalAudio = new THREE.PositionalAudio(listener);
@@ -193,6 +194,7 @@ export default ({ mapping, onResize }) => {
         positionalAudio.setVolume(0.7);
         positionalAudio.play();
         setSounds(sounds => [...sounds, positionalAudio]);
+        threeSounds.push(positionalAudio);
         setPlayingStates(sounds.map(s => s.isPlaying));
         analyser.smoothingTimeConstant = 0.9;
         analysers.push(analyser);
@@ -491,14 +493,14 @@ export default ({ mapping, onResize }) => {
     render();
 
     return () => {
+      threeSounds.forEach(s => {
+        s.stop();
+      });
       while (scene.children.length > 0) {
         scene.remove(scene.children[0]);
       }
       renderer.dispose();
-      sounds.forEach(s => {
-        s.stop();
-        window.removeEventListener("resize", resizeHandler);
-      });
+      window.removeEventListener("resize", resizeHandler);
     };
   }, []);
 
