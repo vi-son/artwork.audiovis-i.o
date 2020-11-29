@@ -23,7 +23,9 @@ class AudiovisIO extends React.Component {
     this.state = {
       mapping: undefined
     };
-    this.initServiceWorker();
+    if (process.env.NODE_ENV === "production") {
+      this.initServiceWorker();
+    }
   }
 
   initServiceWorker() {

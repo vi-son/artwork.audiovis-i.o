@@ -20,6 +20,7 @@ uniform vec3 uPoints[3];
 
 uniform int uStopCount;
 uniform float uAnalysers[5];
+uniform int uAnalyserOffset;
 
 varying vec2 vUv;
 varying vec3 vViewPosition;
@@ -96,7 +97,7 @@ void main() {
   // Remap from [-0.5, 0.5] to [0, 1]
   float t = (position * 2.0) * 0.5 + 0.5;
   int index = int(t) * 4;
-  float audio = uAnalysers[index] * 10.0;
+  float audio = uAnalysers[uAnalyserOffset + index] * 10.0;
   audio = clamp(audio, 0.1, 5.0);
   vec2 volume = audio * vec2(uThickness * (sin(t * PI)));
 

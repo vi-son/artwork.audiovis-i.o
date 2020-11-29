@@ -24,6 +24,8 @@ const remap = (v, a, b, c, d) => {
 export default ({ mapping, onResize }) => {
   const canvasRef = useRef();
   const canvasWrapperRef = useRef();
+  const [sounds, setSounds] = useState([]);
+  const [playingStates, setPlayingStates] = useState([]);
 
   const getRandomIdx = count => {
     return Math.floor(Math.random(), count);
@@ -103,7 +105,6 @@ export default ({ mapping, onResize }) => {
     controls.enableDamping = true;
     controls.dampingFactor = 0.2;
     // Audio listener
-    const sounds = [];
     const analysers = [];
     const listener = new THREE.AudioListener();
     camera.add(listener);
@@ -160,6 +161,10 @@ export default ({ mapping, onResize }) => {
           type: "a",
           value: new Array(mapping.length).fill(0)
         },
+        uAnalyserOffset: {
+          type: "i",
+          value: 0
+        },
         uRadialSegments: { type: "f", value: numSides },
         uStopCount: { type: "i", value: colorMappings.length },
         uPoints: {
@@ -187,7 +192,8 @@ export default ({ mapping, onResize }) => {
         positionalAudio.setLoop(true);
         positionalAudio.setVolume(0.7);
         positionalAudio.play();
-        sounds.push(positionalAudio);
+        setSounds(sounds => [...sounds, positionalAudio]);
+        setPlayingStates(sounds.map(s => s.isPlaying));
         analyser.smoothingTimeConstant = 0.9;
         analysers.push(analyser);
         if (i === mapping.length - 1) {
@@ -195,19 +201,18 @@ export default ({ mapping, onResize }) => {
           console.log("all loaded");
         }
       });
-      var geometry = new THREE.BoxBufferGeometry(0.5, 0.5, 0.5);
-      var material = new THREE.MeshBasicMaterial({
-        color: 0xffffff,
-        opacity: 0,
-        transparent: true
-      });
-      var cube = new THREE.Mesh(geometry, material);
-      cube.position.set(0, i / (colorMappings.length - 1) - 0.5, 0);
-      audioVisualizerCubes.push(cube);
-      var helper = new PositionalAudioHelper(positionalAudio);
-      positionalAudio.add(helper);
-      cube.add(positionalAudio);
-      // scene.add(cube);
+      // var geometry = new THREE.BoxBufferGeometry(0.5, 0.5, 0.5);
+      // var material = new THREE.MeshBasicMaterial({
+      //   color: 0xffffff,
+      //   opacity: 0,
+      //   transparent: true
+      // });
+      // var cube = new THREE.Mesh(geometry, material);
+      // cube.position.set(0, i / (colorMappings.length - 1) - 0.5, 0);
+      // audioVisualizerCubes.push(cube);
+      // var helper = new PositionalAudioHelper(positionalAudio);
+      // positionalAudio.add(helper);
+      // cube.add(positionalAudio);
     });
 
     //// FEELING MAPPING TOTEM
@@ -230,6 +235,8 @@ export default ({ mapping, onResize }) => {
       side: THREE.DoubleSide,
       flatShading: false
     });
+
+    let shapeOffset = 0;
     feelingMappings.map((f, i) => {
       const point = f.feeling.point ? f.feeling.point : { x: 0, y: 0, z: 0 };
       const position = new THREE.Vector3(point.x, point.y, point.z);
@@ -250,14 +257,18 @@ export default ({ mapping, onResize }) => {
       // Create the final object to add to the scene
       var bezierObject = new THREE.Line(bezierGeometry, bezierMaterial);
       feelingsGroup.add(bezierObject);
+      shapeOffset++;
     });
     scene.add(feelingsGroup);
+    console.log("Shape Offset", shapeOffset);
 
     //// SHAPE MAPPING TOTEM
+    let colorOffset = 0;
     var shapeMaterial = new THREE.MeshLambertMaterial({ color: 0xcfddec });
     const shapeGroup = new THREE.Group();
     const radius = 0.5;
     shapeMappings.map((s, i) => {
+      colorOffset++;
       const yStep = i / shapeMappings.length - 0.5;
       const position = new THREE.Vector3(
         radius * Math.sin(Math.random() * 3.1415 * 2.0),
@@ -344,6 +355,7 @@ export default ({ mapping, onResize }) => {
       scene.add(line);
     });
     scene.add(shapeGroup);
+    console.log("Color Offset", colorOffset);
 
     //// COLOR MAPPING TOTEM
     colorMappings.map((c, i) => {});
@@ -439,10 +451,13 @@ export default ({ mapping, onResize }) => {
       });
       if (analyzerValues.length > 0) {
         tubeMesh.material.uniforms.uAnalysers.value = analyzerValues;
+        tubeMesh.material.uniforms.uAnalyserOffset.value =
+          shapeOffset + colorOffset;
       }
+
       shapeGroup.children.forEach((obj, i) => {
-        if (analysers[i]) {
-          var data = analysers[i].getAverageFrequency();
+        if (analysers[shapeOffset + i]) {
+          var data = analysers[shapeOffset + i].getAverageFrequency();
           const val = remap(data, 0.0, 127.0, 0.1, 0.5);
           obj.scale.set(val, val, val);
           obj.material.color = shapeMaterial.color
@@ -450,6 +465,7 @@ export default ({ mapping, onResize }) => {
             .multiplyScalar(val * 1.0);
         }
       });
+
       feelingsGroup.children.forEach((curveObj, i) => {
         if (analysers[i]) {
           var data = analysers[i].getAverageFrequency();
@@ -488,6 +504,30 @@ export default ({ mapping, onResize }) => {
 
   return (
     <div className="totem">
+      {process.env.NODE_ENV === "development" ? (
+        <div className="sounds-ui">
+          {sounds.map((s, i) => {
+            return (
+              <span
+                key={i}
+                className={[
+                  "sound-ui",
+                  playingStates[i] ? "active" : "inactive"
+                ].join(" ")}
+                onClick={() => {
+                  s.isPlaying ? s.stop() : s.play();
+                  setPlayingStates(sounds.map(s => s.isPlaying));
+                }}
+              >
+                Sound {i}
+              </span>
+            );
+          })}
+        </div>
+      ) : (
+        <></>
+      )}
+
       <div className="canvas-wrapper" ref={canvasWrapperRef}>
         <canvas ref={canvasRef}></canvas>
       </div>

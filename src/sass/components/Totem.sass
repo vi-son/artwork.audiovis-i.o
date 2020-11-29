@@ -1,3 +1,5 @@
+@import @vi.son/rouge/1-settings/_colors.sass
+
 .totem
   .canvas-wrapper
     height: 100vh
@@ -58,3 +60,22 @@
       max-width: 30ch
       line-height: 1.2
       color: var(--color-snow)
+
+  .sounds-ui
+    display: flex
+    position: fixed
+    right: 10px
+    top: 10px
+    display: flex
+    flex-direction: column
+    z-index: 9999
+    line-height: 1.5
+    .sound-ui
+      font-size: 1rem
+      cursor: pointer
+      &:hover
+        color: var(--color-curacao) !important
+      &.active
+        color: var(--color-snow)
+      &.inactive
+        color: var(--color-darkness)
