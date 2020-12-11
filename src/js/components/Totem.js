@@ -3,7 +3,10 @@ import React, { useState, useRef, useEffect } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { PositionalAudioHelper } from "three/examples/jsm/helpers/PositionalAudioHelper.js";
+import { EXRLoader } from "three/examples/jsm/loaders/EXRLoader.js";
 import md5 from "blueimp-md5";
+import Stats from "three/examples/jsm/libs/stats.module.js";
+import * as dat from "dat.gui";
 // Local imports
 import createLineGeometry from "../utils/createLineGeometry.js";
 // Style imports
@@ -69,10 +72,16 @@ export default ({ mapping, onResize }) => {
       };
     });
 
+  let stats;
   if (process.env.NODE_ENV === "development") {
     console.log(`# Color Mappings: ${colorMappings.length}`);
     console.log(`# Shape Mappings: ${shapeMappings.length}`);
     console.log(`# Feeling Mappings: ${feelingMappings.length}`);
+    // Stats
+    stats = new Stats();
+    document.body.appendChild(stats.dom);
+    // Gui
+    const gui = new dat.GUI();
   }
 
   useEffect(() => {
@@ -81,27 +90,33 @@ export default ({ mapping, onResize }) => {
 
     // Scene
     const scene = new THREE.Scene();
+    const totem = new THREE.Group();
+    scene.add(totem);
+    totem.position.set(0, 0, 0);
 
     // Renderer
     const renderer = new THREE.WebGLRenderer({
       canvas: canvasRef.current,
       antialias: 1,
-      alpha: true,
-      preserveDrawingBuffer: true
+      // alpha: true,
+      preserveDrawingBuffer: true,
+      toneMapping: THREE.ACESFilmicToneMapping
     });
-    renderer.setSize(size.width, size.height);
+    renderer.setSize(size.width + 300, size.height);
 
     // Camera
     var camera = new THREE.PerspectiveCamera(
       45,
-      size.width / size.height,
+      (size.width + 300) / size.height,
       0.01,
       1000
     );
     var controls = new OrbitControls(camera, renderer.domElement);
-    camera.position.set(1.5, 1.5, 1.5);
+    camera.position.set(0, 3.0, 0);
     controls.update();
+    console.log(controls);
     controls.enableZoom = true;
+    controls.enablePan = false;
     controls.enableDamping = true;
     controls.dampingFactor = 0.2;
     // Audio listener
@@ -113,7 +128,32 @@ export default ({ mapping, onResize }) => {
     // Light
     var light = new THREE.HemisphereLight(0xffffff, 0x666666, 3.75);
     light.position.set(0, 10, 0);
+
     scene.add(light);
+
+    const geometry = new THREE.SphereGeometry(0.05, 32, 32);
+    const material = new THREE.MeshPhysicalMaterial({
+      color: 0x424242,
+      roughness: 0.6,
+      metalness: 0.7
+    });
+    const sphere = new THREE.Mesh(geometry, material);
+    scene.add(sphere);
+
+    const pmremGenerator = new THREE.PMREMGenerator(renderer);
+    let exrCubeRenderTarget;
+    pmremGenerator.compileEquirectangularShader();
+
+    new EXRLoader()
+      .setDataType(THREE.UnsignedByteType)
+      .load("/assets/textures/abandoned_factory_canteen_01_1k.exr", function(
+        texture
+      ) {
+        exrCubeRenderTarget = pmremGenerator.fromEquirectangular(texture);
+        // scene.background = exrCubeRenderTarget.texture;
+        sphere.material.envMap = exrCubeRenderTarget.texture;
+        texture.dispose();
+      });
 
     // Tube material
     const colors = colorMappings.map(
@@ -246,7 +286,7 @@ export default ({ mapping, onResize }) => {
       const feelingSphere = new THREE.Mesh(sphereGeometry, feelingMaterial);
       feelingSphere.scale.set(0.15, 0.15, 0.15);
       feelingSphere.position.copy(position);
-      scene.add(feelingSphere);
+      // totem.add(feelingSphere);
       feelingSpheres.push(feelingSphere);
       var curve = new THREE.QuadraticBezierCurve3(
         new THREE.Vector3(0, -1, 0),
@@ -261,7 +301,7 @@ export default ({ mapping, onResize }) => {
       feelingsGroup.add(bezierObject);
       shapeOffset++;
     });
-    scene.add(feelingsGroup);
+    // totem.add(feelingsGroup);
     console.log("Shape Offset", shapeOffset);
 
     //// SHAPE MAPPING TOTEM
@@ -354,9 +394,9 @@ export default ({ mapping, onResize }) => {
       const lineGeometry = new THREE.BufferGeometry().setFromPoints(points);
       const lineMaterial = new THREE.LineBasicMaterial({ color: 0xffffff });
       const line = new THREE.Line(lineGeometry, lineMaterial);
-      scene.add(line);
+      //totem.add(line);
     });
-    scene.add(shapeGroup);
+    // totem.add(shapeGroup);
     console.log("Color Offset", colorOffset);
 
     //// COLOR MAPPING TOTEM
@@ -371,7 +411,7 @@ export default ({ mapping, onResize }) => {
     ];
     const tubeMesh = new THREE.Mesh(tubeGeometry, instTubeMaterial);
     tubeMesh.frustumCulled = false;
-    scene.add(tubeMesh);
+    totem.add(tubeMesh);
 
     // Clock + timings
     var clock = new THREE.Clock();
@@ -404,7 +444,7 @@ export default ({ mapping, onResize }) => {
     function onWindowResize() {
       if (canvasWrapperRef.current) {
         let newSize = canvasWrapperRef.current.getBoundingClientRect();
-        camera.aspect = newSize.width / newSize.height;
+        camera.aspect = (newSize.width + 300) / newSize.height;
         camera.updateProjectionMatrix();
         backgroundCamera.aspect = newSize.width / newSize.height;
         backgroundCamera.updateProjectionMatrix();
@@ -436,6 +476,7 @@ export default ({ mapping, onResize }) => {
     let $dt = 0;
     var render = function() {
       requestAnimationFrame(render);
+
       if (!allLoaded) return;
       time = clock.getElapsedTime();
       $dt = clock.getDelta();
@@ -443,8 +484,10 @@ export default ({ mapping, onResize }) => {
       renderer.clear();
       renderer.render(backgroundPlane, backgroundCamera);
       renderer.render(scene, camera);
+      stats.update();
 
       // Analyzers
+      /*
       let analyzerValues = analysers.map((analyser, i) => {
         var data = analyser.getAverageFrequency();
         const val = remap(data, 0.0, 127.0, 0.1, 0.5);
@@ -487,6 +530,7 @@ export default ({ mapping, onResize }) => {
           curveObj.geometry.attributes.position.needsUpdate = true;
         }
       });
+      */
       tubeMesh.material.uniforms.uTime.value = time;
       frameCount++;
     };

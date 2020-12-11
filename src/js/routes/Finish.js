@@ -31,7 +31,7 @@ class Finish extends React.Component {
     return (
       <Layout className="finish">
         <main className="two-columns">
-          <div className="textblock">
+          <div className="ui">
             <header className="title">
               <span className="emoji">&#127881;</span>
               <h2 className="title">Glückwunsch</h2>
@@ -45,9 +45,9 @@ class Finish extends React.Component {
               welches du dir rechts anschauen kannst.
             </article>
             <div className="buttons">
-              <Link className="btn-primary" to="/flow">
+              <a className="btn-primary" to="/flow">
                 Noch eine Runde
-              </Link>
+              </a>
               <a
                 className="btn-secondary"
                 href="https://exhibition.mixing-senses.art"

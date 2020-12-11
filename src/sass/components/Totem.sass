@@ -2,7 +2,9 @@
 
 .totem
   .canvas-wrapper
+    position: fixed
     height: 100vh
+    width: calc(100vw + 300px)
     top: 0
     left: 0
     display: flex
@@ -49,12 +51,14 @@
   .interaction-explanation
     position: fixed
     top: 30px
-    left: calc(40% + 30px)
+    left: 0
+    transform: scale(0.75)
     z-index: 999
     display: flex
     justify-content: center
     align-items: center
     opacity: 0.75
+    width: 100vw
     .text
       margin-top: 20px
       max-width: 30ch
