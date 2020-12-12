@@ -51,33 +51,6 @@ class AudiovisIO extends React.Component {
       <div className="audiovisio-wrapper">
         <Finish mapping={this.state.mapping} />
       </div>
-      //   <Router basename={"/audiovis-io"}>
-      //     <Switch>
-      //       <Route exact path="/">
-      //         <Layout className="start" onBack={this.props.onBack}>
-      //           <Start onClick={this.props.onEnter} />
-      //         </Layout>
-      //       </Route>
-
-      //       <Route exact path="/flow">
-      //         <Layout className="layout-flow" onBack={this.props.onBack}>
-      //           <Flow
-      //             onFinish={(mapping, history) => {
-      //               this.setState({ mapping: mapping });
-      //               history.push("/result");
-      //             }}
-      //           />
-      //         </Layout>
-      //       </Route>
-
-      //       <Route exact path="/result">
-      //         <Layout className="finish" onBack={this.props.onBack}>
-      //           <Finish mapping={this.state.mapping} />
-      //         </Layout>
-      //       </Route>
-      //     </Switch>
-      //   </Router>
-      // </div>
     );
   }
 }
