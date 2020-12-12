@@ -14,6 +14,33 @@ class Finish extends React.Component {
     // JSON
     this.exampleMapping = require("../../json/08f406489239afeddc1391e4125cf37b.json");
     this.prepareDownload = this.prepareDownload.bind(this);
+    this.storeOnline = this.storeOnline.bind(this);
+    this.state = {
+      sessionId: undefined
+    };
+  }
+
+  storeOnline() {
+    if (this.props.mapping === undefined) return;
+    const session = `${md5(JSON.stringify(this.props.mapping))}`;
+    const payload = JSON.stringify({
+      session: session,
+      mappings: this.props.mapping
+    });
+    console.log(payload);
+    const url =
+      process.env.NODE_ENV === "development"
+        ? "http://127.0.0.1:3000/entry"
+        : "https://barn.mixing-senses.art/entry";
+    fetch(url, { method: "POST", body: payload })
+      .then(res => res.json())
+      .then(res => {
+        console.log(`Stored Totem with Session ID: ${res.session}`);
+        this.setState({ sessionId: res.session });
+      })
+      .catch(err => {
+        console.error(err);
+      });
   }
 
   prepareDownload() {
@@ -46,19 +73,30 @@ class Finish extends React.Component {
             </article>
             <div className="buttons">
               <Link className="btn-primary" to="/flow">
-                Noch eine Runde
+                🤟🏼 Noch eine Runde
               </Link>
               <a
                 className="btn-secondary"
                 href="https://exhibition.mixing-senses.art"
               >
-                Zurück zur Ausstellung
+                🏛️ Zum Foyer
               </a>
               <button className="btn-secondary" onClick={this.prepareDownload}>
-                download daten
+                💾 download daten
+              </button>
+              <button className="btn-secondary" onClick={this.storeOnline}>
+                ☁️ online speichern
               </button>
             </div>
           </div>
+          {this.state.sessionId ? (
+            <div className="stored-with-session-id">
+              <span>Gespeichert unter der ID</span>
+              <b>{this.state.sessionId}</b>
+            </div>
+          ) : (
+            <></>
+          )}
           <div className="totem">
             {this.props.mapping !== undefined ? (
               <Totem ref={this.totemRef} mapping={this.props.mapping} />
