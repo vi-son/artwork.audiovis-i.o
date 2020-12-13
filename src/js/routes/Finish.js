@@ -15,16 +15,38 @@ class Finish extends React.Component {
     this.exampleMapping = require("../../json/08f406489239afeddc1391e4125cf37b.json");
     this.prepareDownload = this.prepareDownload.bind(this);
     this.storeOnline = this.storeOnline.bind(this);
+    this.restoreTotem = this.restoreTotem.bind(this);
+    this.totemIdRef = React.createRef();
     this.state = {
-      sessionId: undefined
+      totem: undefined,
+      mapping: this.props.mapping
     };
+  }
+
+  restoreTotem() {
+    const id = this.totemIdRef.current.value;
+    console.log(id);
+    const url =
+      process.env.NODE_ENV === "development"
+        ? "http://127.0.0.1:3000/entry"
+        : "https://barn.mixing-senses.art/entry";
+    fetch(`${url}/${id}`)
+      .then(res => res.json())
+      .then(json => {
+        console.log(json);
+      })
+      .catch(err => {
+        console.error(err);
+      });
   }
 
   storeOnline() {
     if (this.props.mapping === undefined) return;
-    const session = `${md5(JSON.stringify(this.props.mapping))}`;
+    const totem = `${md5(JSON.stringify(this.props.mapping))}`;
+    const date = new Date();
     const payload = JSON.stringify({
-      session: session,
+      totem: totem,
+      date: date,
       mappings: this.props.mapping
     });
     console.log(payload);
@@ -35,8 +57,8 @@ class Finish extends React.Component {
     fetch(url, { method: "POST", body: payload })
       .then(res => res.json())
       .then(res => {
-        console.log(`Stored Totem with Session ID: ${res.session}`);
-        this.setState({ sessionId: res.session });
+        console.log(`Stored Totem with Totem ID: ${res.totemId}`);
+        this.setState({ totem: res.totem });
       })
       .catch(err => {
         console.error(err);
@@ -82,17 +104,23 @@ class Finish extends React.Component {
                 🏛️ Zum Foyer
               </a>
               <button className="btn-secondary" onClick={this.prepareDownload}>
-                💾 download daten
+                💾 Download des Totems (.json)
               </button>
               <button className="btn-secondary" onClick={this.storeOnline}>
-                ☁️ online speichern
+                ☁️ Online Speichern
               </button>
+
+              <div className="restore-totem">
+                <label>Totem ID:</label>
+                <input type="text" ref={this.totemIdRef} />
+                <button onClick={this.restoreTotem}>Wiederherstellen</button>
+              </div>
             </div>
           </div>
-          {this.state.sessionId ? (
+          {this.state.totem ? (
             <div className="stored-with-session-id">
               <span>Gespeichert unter der ID</span>
-              <b>{this.state.sessionId}</b>
+              <b>{this.state.totem}</b>
             </div>
           ) : (
             <></>
