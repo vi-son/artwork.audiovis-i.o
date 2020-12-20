@@ -64,12 +64,15 @@
   .sounds-ui
     display: flex
     position: fixed
-    right: 10px
-    top: 10px
+    right: 30px
+    top: 30px
     display: flex
     flex-direction: column
     z-index: 9999
-    line-height: 1.5
+    height: 150px
+    justify-content: space-between
+    text-align: right
+    line-height: 1.0
     .sound-ui
       font-size: 1rem
       cursor: pointer
@@ -79,3 +82,4 @@
         color: var(--color-snow)
       &.inactive
         color: var(--color-darkness)
+        text-decoration: line-through

@@ -25,7 +25,34 @@ export default ({ mapping, onResize }) => {
   const canvasRef = useRef();
   const canvasWrapperRef = useRef();
   const [sounds, setSounds] = useState([]);
+  const [groups, setGroups] = useState([]);
   const [playingStates, setPlayingStates] = useState([]);
+
+  // THREE.js objects
+  let size;
+  let scene = new THREE.Scene();
+  let resizeHandler;
+  let renderer;
+  let camera;
+
+  const feelingsGroup = new THREE.Group();
+  const feelingSpheres = [];
+  const feelingCurves = [];
+
+  const shapeGroup = new THREE.Group();
+  var shapeMaterial = new THREE.MeshLambertMaterial({ color: 0xcfddec });
+
+  let allLoaded = false;
+  let threeSounds = [];
+  let analysers = [];
+  let listener;
+
+  let tubeMesh;
+  let shapeOffset = 0;
+  let colorOffset = 0;
+
+  // Audio
+  const samplesFolder = `/assets/audio/audiovisio/`;
 
   const getRandomIdx = count => {
     return Math.floor(Math.random(), count);
@@ -49,6 +76,14 @@ export default ({ mapping, onResize }) => {
         sample: m.sample
       };
     });
+  const colors = colorMappings.map(
+    cm =>
+      new THREE.Vector3(
+        cm.color[0] / 255.0,
+        cm.color[1] / 255.0,
+        cm.color[2] / 255.0
+      )
+  );
 
   const shapeMappings = mapping
     .filter(m => m.type === "Form")
@@ -75,15 +110,18 @@ export default ({ mapping, onResize }) => {
     console.log(`# Feeling Mappings: ${feelingMappings.length}`);
   }
 
-  useEffect(() => {
-    // Size
-    const size = canvasWrapperRef.current.getBoundingClientRect();
+  const clearScene = () => {
+    while (scene.children.length > 0) {
+      scene.remove(scene.children[0]);
+    }
+    if (renderer) renderer.dispose();
+    if (camera) camera.remove(listener);
+  };
 
-    // Scene
-    const scene = new THREE.Scene();
-
+  const setupScene = () => {
+    scene = new THREE.Scene();
     // Renderer
-    const renderer = new THREE.WebGLRenderer({
+    renderer = new THREE.WebGLRenderer({
       canvas: canvasRef.current,
       antialias: 1,
       alpha: true,
@@ -92,38 +130,80 @@ export default ({ mapping, onResize }) => {
     renderer.setSize(size.width, size.height);
 
     // Camera
-    var camera = new THREE.PerspectiveCamera(
+    camera = new THREE.PerspectiveCamera(
       45,
       size.width / size.height,
       0.01,
       1000
     );
-    var controls = new OrbitControls(camera, renderer.domElement);
+    let controls = new OrbitControls(camera, renderer.domElement);
     camera.position.set(1.5, 1.5, 1.5);
     controls.update();
     controls.enableZoom = true;
     controls.enableDamping = true;
     controls.dampingFactor = 0.2;
+
     // Audio listener
-    const analysers = [];
-    const listener = new THREE.AudioListener();
+    listener = new THREE.AudioListener();
     camera.add(listener);
-    const samplesFolder = `/assets/audio/audiovisio/`;
 
     // Light
     var light = new THREE.HemisphereLight(0xffffff, 0x666666, 3.75);
     light.position.set(0, 10, 0);
     scene.add(light);
+  };
 
+  const loadAudioSamples = () => {
+    allLoaded = false;
+    sounds.forEach(s => {
+      s.stop();
+    });
+    setSounds([]);
+    threeSounds = [];
+    analysers = [];
+    // Audio
+    const audioLoader = new THREE.AudioLoader();
+    // Show audio sources
+    const audioVisualizerCubes = [];
+    mapping.map((c, i) => {
+      setGroups(groups => [...groups, c.group]);
+      const sampleFilepath = `${samplesFolder}${c.sample}`;
+      const positionalAudio = new THREE.PositionalAudio(listener);
+      const analyser = new THREE.AudioAnalyser(positionalAudio, 32);
+      audioLoader.load(sampleFilepath, function(buffer) {
+        positionalAudio.setBuffer(buffer);
+        positionalAudio.setLoop(true);
+        positionalAudio.setVolume(0.7);
+        positionalAudio.play();
+        setSounds(sounds => [...sounds, positionalAudio]);
+        setPlayingStates(playingStates => [...playingStates, true]);
+        threeSounds.push(positionalAudio);
+        analyser.smoothingTimeConstant = 0.9;
+        analysers.push(analyser);
+        if (i === mapping.length - 1) {
+          allLoaded = true;
+          console.log("all loaded");
+        }
+      });
+
+      // Debug visualization
+      var geometry = new THREE.BoxBufferGeometry(0.5, 0.5, 0.5);
+      var material = new THREE.MeshBasicMaterial({
+        color: 0xffffff,
+        opacity: 0,
+        transparent: true
+      });
+      var cube = new THREE.Mesh(geometry, material);
+      cube.position.set(0, i / (colorMappings.length - 1) - 0.5, 0);
+      audioVisualizerCubes.push(cube);
+      var helper = new PositionalAudioHelper(positionalAudio);
+      positionalAudio.add(helper);
+      cube.add(positionalAudio);
+    });
+  };
+
+  const buildColorTube = () => {
     // Tube material
-    const colors = colorMappings.map(
-      cm =>
-        new THREE.Vector3(
-          cm.color[0] / 255.0,
-          cm.color[1] / 255.0,
-          cm.color[2] / 255.0
-        )
-    );
     const colorToUniformsArray = new Array(mapping.length)
       .fill(0)
       .map((_, i) => {
@@ -177,46 +257,20 @@ export default ({ mapping, onResize }) => {
         }
       }
     });
+    //// COLOR MAPPING TOTEM
+    const tubeGeometry = createLineGeometry(numSides, subdivisions);
+    const instTubeMaterial = tubeMaterial.clone();
+    instTubeMaterial.uniforms.uPoints.value = [
+      new THREE.Vector3(0, -0.5, 0),
+      new THREE.Vector3(0, 0, 0),
+      new THREE.Vector3(0, +0.5, 0)
+    ];
+    tubeMesh = new THREE.Mesh(tubeGeometry, instTubeMaterial);
+    tubeMesh.frustumCulled = false;
+    scene.add(tubeMesh);
+  };
 
-    // Audio
-    const audioLoader = new THREE.AudioLoader();
-    // Show audio sources
-    const audioVisualizerCubes = [];
-    let allLoaded = false;
-    const threeSounds = [];
-    mapping.map((c, i) => {
-      const sampleFilepath = `${samplesFolder}${c.sample}`;
-      const positionalAudio = new THREE.PositionalAudio(listener);
-      const analyser = new THREE.AudioAnalyser(positionalAudio, 32);
-      audioLoader.load(sampleFilepath, function(buffer) {
-        positionalAudio.setBuffer(buffer);
-        positionalAudio.setLoop(true);
-        positionalAudio.setVolume(0.7);
-        positionalAudio.play();
-        setSounds(sounds => [...sounds, positionalAudio]);
-        threeSounds.push(positionalAudio);
-        setPlayingStates(sounds.map(s => s.isPlaying));
-        analyser.smoothingTimeConstant = 0.9;
-        analysers.push(analyser);
-        if (i === mapping.length - 1) {
-          allLoaded = true;
-          console.log("all loaded");
-        }
-      });
-      // var geometry = new THREE.BoxBufferGeometry(0.5, 0.5, 0.5);
-      // var material = new THREE.MeshBasicMaterial({
-      //   color: 0xffffff,
-      //   opacity: 0,
-      //   transparent: true
-      // });
-      // var cube = new THREE.Mesh(geometry, material);
-      // cube.position.set(0, i / (colorMappings.length - 1) - 0.5, 0);
-      // audioVisualizerCubes.push(cube);
-      // var helper = new PositionalAudioHelper(positionalAudio);
-      // positionalAudio.add(helper);
-      // cube.add(positionalAudio);
-    });
-
+  const buildFeelings = () => {
     //// FEELING MAPPING TOTEM
     let feelingColor = 0x2b13ff;
     if (colors.length > 0) {
@@ -228,9 +282,6 @@ export default ({ mapping, onResize }) => {
       );
       feelingColor = randomColor;
     }
-    const feelingCurves = [];
-    const feelingsGroup = new THREE.Group();
-    const feelingSpheres = [];
     var bezierMaterial = new THREE.LineBasicMaterial({ color: feelingColor });
     var feelingMaterial = new THREE.MeshPhysicalMaterial({
       color: feelingColor,
@@ -238,7 +289,6 @@ export default ({ mapping, onResize }) => {
       flatShading: false
     });
 
-    let shapeOffset = 0;
     feelingMappings.map((f, i) => {
       const point = f.feeling.point ? f.feeling.point : { x: 0, y: 0, z: 0 };
       const position = new THREE.Vector3(point.x, point.y, point.z);
@@ -263,11 +313,10 @@ export default ({ mapping, onResize }) => {
     });
     scene.add(feelingsGroup);
     console.log("Shape Offset", shapeOffset);
+  };
 
+  const buildShapeMappings = () => {
     //// SHAPE MAPPING TOTEM
-    let colorOffset = 0;
-    var shapeMaterial = new THREE.MeshLambertMaterial({ color: 0xcfddec });
-    const shapeGroup = new THREE.Group();
     const radius = 0.5;
     shapeMappings.map((s, i) => {
       colorOffset++;
@@ -358,25 +407,12 @@ export default ({ mapping, onResize }) => {
     });
     scene.add(shapeGroup);
     console.log("Color Offset", colorOffset);
+  };
 
-    //// COLOR MAPPING TOTEM
-    colorMappings.map((c, i) => {});
-
-    const tubeGeometry = createLineGeometry(numSides, subdivisions);
-    const instTubeMaterial = tubeMaterial.clone();
-    instTubeMaterial.uniforms.uPoints.value = [
-      new THREE.Vector3(0, -0.5, 0),
-      new THREE.Vector3(0, 0, 0),
-      new THREE.Vector3(0, +0.5, 0)
-    ];
-    const tubeMesh = new THREE.Mesh(tubeGeometry, instTubeMaterial);
-    tubeMesh.frustumCulled = false;
-    scene.add(tubeMesh);
-
+  const startRenderLoop = () => {
     // Clock + timings
     var clock = new THREE.Clock();
     clock.start();
-    let time = 0.0;
 
     // Background
     var backgroundCamera = new THREE.OrthographicCamera(
@@ -411,27 +447,9 @@ export default ({ mapping, onResize }) => {
         renderer.setSize(newSize.width, newSize.height);
       }
     }
-    const resizeHandler = window.addEventListener(
-      "resize",
-      onWindowResize,
-      false
-    );
+    resizeHandler = window.addEventListener("resize", onWindowResize, false);
 
-    function onPointerUp() {
-      // if (allLoaded) {
-      //   for (let i = 0; i < sounds.length; i++) {
-      //     sounds[i].play();
-      //   }
-      //   allLoaded = false;
-      // }
-    }
-    const pointerUpHandler = window.addEventListener(
-      "pointerup",
-      onPointerUp,
-      false
-    );
-
-    // Render loop
+    let time = 0.0;
     let frameCount = 0;
     let $dt = 0;
     var render = function() {
@@ -451,7 +469,7 @@ export default ({ mapping, onResize }) => {
         const valNorm = remap(data, 0.0, 127.0, 0.0, 1.0);
         return valNorm;
       });
-      if (analyzerValues.length > 0) {
+      if (analyzerValues.length > 0 && tubeMesh !== undefined) {
         tubeMesh.material.uniforms.uAnalysers.value = analyzerValues;
         tubeMesh.material.uniforms.uAnalyserOffset.value =
           shapeOffset + colorOffset;
@@ -487,22 +505,45 @@ export default ({ mapping, onResize }) => {
           curveObj.geometry.attributes.position.needsUpdate = true;
         }
       });
-      tubeMesh.material.uniforms.uTime.value = time;
+      if (tubeMesh !== undefined) {
+        tubeMesh.material.uniforms.uTime.value = time;
+      }
       frameCount++;
     };
     render();
+  };
 
-    return () => {
-      threeSounds.forEach(s => {
-        s.stop();
-      });
-      while (scene.children.length > 0) {
-        scene.remove(scene.children[0]);
-      }
-      renderer.dispose();
-      window.removeEventListener("resize", resizeHandler);
-    };
+  useEffect(() => {
+    size = canvasWrapperRef.current.getBoundingClientRect();
+    clearScene();
+    setupScene();
+    startRenderLoop();
+    return () => cleanUp();
   }, []);
+
+  const cleanUp = () => {
+    threeSounds.forEach(s => {
+      s.stop();
+    });
+    while (scene.children.length > 0) {
+      scene.remove(scene.children[0]);
+    }
+    renderer.dispose();
+    window.removeEventListener("resize", resizeHandler);
+    clearScene();
+  };
+
+  useEffect(() => {
+    size = canvasWrapperRef.current.getBoundingClientRect();
+    clearScene();
+    setupScene();
+    loadAudioSamples();
+    buildColorTube();
+    buildFeelings();
+    buildShapeMappings();
+    startRenderLoop();
+    return () => cleanUp();
+  }, [mapping]);
 
   return (
     <div className="totem">
@@ -521,7 +562,7 @@ export default ({ mapping, onResize }) => {
                   setPlayingStates(sounds.map(s => s.isPlaying));
                 }}
               >
-                Sound {i}
+                {groups[i]}
               </span>
             );
           })}

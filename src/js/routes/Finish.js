@@ -8,6 +8,11 @@ import Totem from "../components/Totem.js";
 // Style imports
 import "../../sass/routes/Finish.sass";
 
+const BACKEND =
+  process.env.NODE_ENV === "development"
+    ? "http://127.0.0.1:3000"
+    : "https://api.mixing-senses.art";
+
 class Finish extends React.Component {
   constructor(props) {
     super(props);
@@ -26,14 +31,12 @@ class Finish extends React.Component {
   restoreTotem() {
     const id = this.totemIdRef.current.value;
     console.log(id);
-    const url =
-      process.env.NODE_ENV === "development"
-        ? "http://127.0.0.1:3000/entry"
-        : "https://barn.mixing-senses.art/entry";
+    const url = `${BACKEND}/entry`;
     fetch(`${url}/${id}`)
       .then(res => res.json())
       .then(json => {
         console.log(json);
+        this.setState({ mapping: json.mappings });
       })
       .catch(err => {
         console.error(err);
@@ -50,10 +53,7 @@ class Finish extends React.Component {
       mappings: this.props.mapping
     });
     console.log(payload);
-    const url =
-      process.env.NODE_ENV === "development"
-        ? "http://127.0.0.1:3000/entry"
-        : "https://barn.mixing-senses.art/entry";
+    const url = `${BACKEND}/entry`;
     fetch(url, { method: "POST", body: payload })
       .then(res => res.json())
       .then(res => {
@@ -104,7 +104,7 @@ class Finish extends React.Component {
                 🏛️ Zum Foyer
               </a>
               <button className="btn-secondary" onClick={this.prepareDownload}>
-                💾 Download des Totems (.json)
+                💾 Download (JSON Format)
               </button>
               <button className="btn-secondary" onClick={this.storeOnline}>
                 ☁️ Online Speichern
@@ -126,8 +126,8 @@ class Finish extends React.Component {
             <></>
           )}
           <div className="totem">
-            {this.props.mapping !== undefined ? (
-              <Totem ref={this.totemRef} mapping={this.props.mapping} />
+            {this.state.mapping !== undefined ? (
+              <Totem ref={this.totemRef} mapping={this.state.mapping} />
             ) : (
               <Totem ref={this.totemRef} mapping={this.exampleMapping} />
             )}
