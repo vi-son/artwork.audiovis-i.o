@@ -428,7 +428,8 @@ export default ({ mapping, onResize }) => {
       vertexShader: backgroundVertexShader,
       fragmentShader: backgroundFragmentShader,
       uniforms: {
-        uResolution: { value: new THREE.Vector2(size.width, size.height) }
+        uResolution: { value: new THREE.Vector2(size.width, size.height) },
+        uAnalyzer: { value: 0.0 }
       },
       depthWrite: false
     });
@@ -473,6 +474,7 @@ export default ({ mapping, onResize }) => {
         tubeMesh.material.uniforms.uAnalysers.value = analyzerValues;
         tubeMesh.material.uniforms.uAnalyserOffset.value =
           shapeOffset + colorOffset;
+        backgroundPlane.material.uniforms.uAnalyzer.value = analyzerValues[0];
       }
 
       shapeGroup.children.forEach((obj, i) => {

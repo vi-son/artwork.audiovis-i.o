@@ -1,5 +1,7 @@
 #pragma glslify: pillow = require(./pillow)
 
+uniform float uAnalyzer;
+
 float rand(vec2 n) { 
 	return fract(sin(dot(n, vec2(12.9898, 4.1414))) * 43758.5453);
 }
@@ -21,10 +23,10 @@ void main() {
   vec2 uv = gl_FragCoord.xy / uResolution;
   vec3 color = vec3(0.0);
 
-  vec4 color_a = vec4(105.0 / 255.0, 108.0 / 255.0, 112.0 / 255.0, 1.0);
-  vec4 color_b = vec4(144.0 / 255.0, 150.0 / 255.0, 154.0 / 255.0, 1.0);
+  vec4 color_a = vec4(105.0 / 255.0, 108.0 / 255.0, 112.0 / 255.0, 1.0) - (uAnalyzer / 2.0);
+  vec4 color_b = vec4(144.0 / 255.0, 150.0 / 255.0, 154.0 / 255.0, 1.0) + (uAnalyzer / 4.0);
 
-  vec2 gamma = vec2(6.0);
+  vec2 gamma = vec2(6.0 - uAnalyzer * 3.0);
   
   color = pillow(color_a, color_b, gamma, uv).rgb + rand(uv * 100.0) / 100.0;
 
