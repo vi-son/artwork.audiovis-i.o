@@ -42,7 +42,7 @@ jobs:
       env:
         DEPLOY_KEY: ${{secrets.SSH_KEY}}
       with:
-        flags: '-avzr --delete'
+        flags: '-avzr'
         options: ''
         ssh_options: ''
         src: 'build/'
