@@ -13,41 +13,6 @@
       width: 100%
       height: 100%
 
-  .download-rendering
-    position: fixed
-    bottom: 20px
-    right: 20px
-    z-index: 999
-    display: flex
-    justify-content: center
-    align-items: center
-    background: none
-    &:hover
-      background: none
-      .emoji
-        background: var(--color-curacao)
-      .text
-        opacity: 1
-        transform: translateY(0)
-    .text
-      opacity: 0
-      margin-right: 30px
-      font-weight: bold
-      color: white
-      font-size: 1.75rem
-      transition: transform 1s ease, opacity 1s ease
-      transform: translateY(30px)
-    .emoji
-      background: white
-      display: flex
-      justify-content: center
-      align-items: center
-      width: 120px
-      height: 120px
-      border-radius: 120px
-      font-size: 2.5rem
-      margin-right: 10px
-
   .interaction-explanation
     position: fixed
     top: 30px
@@ -68,11 +33,11 @@
   .sounds-ui
     display: flex
     position: fixed
-    right: 10px
-    top: 10px
+    left: 20px
+    top: 130px
     display: flex
     flex-direction: column
-    z-index: 9999
+    z-index: 9
     line-height: 1.5
     .sound-ui
       font-size: 1rem

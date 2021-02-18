@@ -1,28 +1,39 @@
-const packageName = require("./package.json").name;
-const path = require("path");
-const webpack = require("webpack");
-const HtmlWebpackPlugin = require("html-webpack-plugin");
 const CopyPlugin = require("copy-webpack-plugin");
-const WorkboxPlugin = require("workbox-webpack-plugin");
 const FaviconsWebpackPlugin = require("favicons-webpack-plugin");
+const HtmlWebpackPlugin = require("html-webpack-plugin");
+const WorkboxPlugin = require("workbox-webpack-plugin");
+const package = require("./package.json");
+const path = require("path");
+const shell = require("shelljs");
+const webpack = require("webpack");
 
-module.exports = env => {
+function getVersionFromGit() {
+  const gitTag = shell.exec("git describe --abbrev=0 --tags");
+  const gitCommit = shell.exec("git rev-parse --short HEAD");
+  return {
+    tag: gitTag.trim(),
+    commit: gitCommit.trim(),
+    package: package,
+  };
+}
+
+module.exports = (env) => {
   console.log(`ENV: ${env.NODE_ENV} / ${env.production}`);
 
   return {
     mode: "development",
     devServer: {
       port: 3333,
-      historyApiFallback: true
+      historyApiFallback: true,
     },
     entry: {
-      index: path.resolve(__dirname, "src/js/index.js")
+      index: path.resolve(__dirname, "src/js/index.js"),
     },
     output: {
       path: path.resolve(__dirname, "build"),
       publicPath: "/",
       filename: "[name].bundle.js",
-      chunkFilename: "[name].bundle.js"
+      chunkFilename: "[name].bundle.js",
     },
     resolve: {
       extensions: [".js"],
@@ -32,24 +43,24 @@ module.exports = env => {
         "@assets": path.resolve(__dirname, "assets/"),
         "@routes": path.resolve(__dirname, "src/js/routes/"),
         "@components": path.resolve(__dirname, "src/js/components/"),
-        "@utils": path.resolve(__dirname, "src/js/utils/")
-      }
+        "@utils": path.resolve(__dirname, "src/js/utils/"),
+      },
     },
     optimization: {
       splitChunks: {
-        chunks: "all"
-      }
+        chunks: "all",
+      },
     },
     module: {
       rules: [
         {
           test: /\.js$/,
           loader: "babel-loader",
-          exclude: /node_modules/
+          exclude: /node_modules/,
         },
         {
           test: /\.s[ac]ss$/i,
-          use: ["style-loader", "css-loader", "sass-loader"]
+          use: ["style-loader", "css-loader", "sass-loader"],
         },
         {
           test: /\.(woff(2)?|ttf|otf|eot)(\?v=\d+\.\d+\.\d+)?$/,
@@ -58,10 +69,10 @@ module.exports = env => {
               loader: "file-loader",
               options: {
                 name: "[name].[ext]",
-                outputPath: "fonts/"
-              }
-            }
-          ]
+                outputPath: "fonts/",
+              },
+            },
+          ],
         },
         {
           test: /\.mp3$/,
@@ -70,46 +81,47 @@ module.exports = env => {
               loader: "file-loader",
               options: {
                 name: "[name].[ext]",
-                outputPath: "assets/audio/"
-              }
-            }
-          ]
+                outputPath: "assets/audio/",
+              },
+            },
+          ],
         },
         {
           test: /\.svg$/,
           use: [
             {
-              loader: "babel-loader"
+              loader: "babel-loader",
             },
             {
               loader: "react-svg-loader",
               options: {
-                jsx: true // true outputs JSX tags
-              }
-            }
-          ]
+                jsx: true, // true outputs JSX tags
+              },
+            },
+          ],
         },
         {
           test: /\.(glsl|frag|vert)$/,
           use: ["glslify-import-loader", "raw-loader", "glslify-loader"],
-          exclude: /node_modules/
-        }
-      ]
+          exclude: /node_modules/,
+        },
+      ],
     },
     plugins: [
       new webpack.DefinePlugin({
-        "process.env.NODE_ENV": JSON.stringify(env.NODE_ENV)
+        "process.env.NODE_ENV": JSON.stringify(env.NODE_ENV),
+        "process.env.VERSION": JSON.stringify(getVersionFromGit()),
       }),
       new HtmlWebpackPlugin({
         template: __dirname + "/src/html/index.html",
         filename: "index.html",
-        inject: "body"
+        inject: "body",
       }),
       new FaviconsWebpackPlugin(
         path.resolve(`${__dirname}/assets/svg/favicon.svg`)
       ),
       new CopyPlugin({
-        patterns: [{ from: path.resolve(__dirname, "assets"), to: "assets" }]
+        patterns: [{ from: path.resolve(__dirname, "assets"), to: "assets" }],
       }),
       new WorkboxPlugin.GenerateSW({
         swDest: "sw.js",
@@ -118,11 +130,11 @@ module.exports = env => {
         runtimeCaching: [
           {
             urlPattern: new RegExp("http://localhost:3333/*.js"),
-            handler: "StaleWhileRevalidate"
-          }
+            handler: "StaleWhileRevalidate",
+          },
         ],
-        maximumFileSizeToCacheInBytes: 15000000
-      })
-    ]
+        maximumFileSizeToCacheInBytes: 15000000,
+      }),
+    ],
   };
 };

@@ -7,6 +7,7 @@ import { EXRLoader } from "three/examples/jsm/loaders/EXRLoader.js";
 import md5 from "blueimp-md5";
 import Stats from "three/examples/jsm/libs/stats.module.js";
 import * as dat from "dat.gui";
+import { ButtonDownloadRendering } from "@vi.son/components";
 // Local imports
 import createLineGeometry from "../utils/createLineGeometry.js";
 // Style imports
@@ -30,11 +31,11 @@ export default ({ mapping, onResize }) => {
   const [sounds, setSounds] = useState([]);
   const [playingStates, setPlayingStates] = useState([]);
 
-  const getRandomIdx = count => {
+  const getRandomIdx = (count) => {
     return Math.floor(Math.random(), count);
   };
 
-  const prepareDownload = imageData => {
+  const prepareDownload = (imageData) => {
     const downloadLink = document.createElement("a");
     const dataStr = imageData;
     downloadLink.href = dataStr;
@@ -44,31 +45,31 @@ export default ({ mapping, onResize }) => {
   };
 
   const colorMappings = mapping
-    .filter(m => m.type === "Farbe")
+    .filter((m) => m.type === "Farbe")
     .map((m, i) => {
       return {
         index: i,
         color: m.mapping,
-        sample: m.sample
+        sample: m.sample,
       };
     });
 
   const shapeMappings = mapping
-    .filter(m => m.type === "Form")
+    .filter((m) => m.type === "Form")
     .map((m, i) => {
       return {
         index: i,
-        shape: m.mapping
+        shape: m.mapping,
       };
     });
 
   const feelingMappings = mapping
-    .filter(m => m.type === "Gefühl")
+    .filter((m) => m.type === "Gefühl")
     .map((m, i) => {
       return {
         index: i,
         feeling: m.mapping,
-        sample: m.sample
+        sample: m.sample,
       };
     });
 
@@ -100,7 +101,7 @@ export default ({ mapping, onResize }) => {
       antialias: 1,
       // alpha: true,
       preserveDrawingBuffer: true,
-      toneMapping: THREE.ACESFilmicToneMapping
+      toneMapping: THREE.ACESFilmicToneMapping,
     });
     renderer.setSize(size.width + 300, size.height);
 
@@ -135,7 +136,7 @@ export default ({ mapping, onResize }) => {
     const material = new THREE.MeshPhysicalMaterial({
       color: 0x424242,
       roughness: 0.6,
-      metalness: 0.7
+      metalness: 0.7,
     });
     const sphere = new THREE.Mesh(geometry, material);
     scene.add(sphere);
@@ -146,18 +147,19 @@ export default ({ mapping, onResize }) => {
 
     new EXRLoader()
       .setDataType(THREE.UnsignedByteType)
-      .load("/assets/textures/abandoned_factory_canteen_01_1k.exr", function(
-        texture
-      ) {
-        exrCubeRenderTarget = pmremGenerator.fromEquirectangular(texture);
-        // scene.background = exrCubeRenderTarget.texture;
-        sphere.material.envMap = exrCubeRenderTarget.texture;
-        texture.dispose();
-      });
+      .load(
+        "/assets/textures/abandoned_factory_canteen_01_1k.exr",
+        function (texture) {
+          exrCubeRenderTarget = pmremGenerator.fromEquirectangular(texture);
+          // scene.background = exrCubeRenderTarget.texture;
+          sphere.material.envMap = exrCubeRenderTarget.texture;
+          texture.dispose();
+        }
+      );
 
     // Tube material
     const colors = colorMappings.map(
-      cm =>
+      (cm) =>
         new THREE.Vector3(
           cm.color[0] / 255.0,
           cm.color[1] / 255.0,
@@ -180,30 +182,30 @@ export default ({ mapping, onResize }) => {
       fragmentShader: tubeFragmentShader,
       side: THREE.FrontSide,
       extensions: {
-        deriviatives: true
+        deriviatives: true,
       },
       defines: {
         lengthSegments: subdivisions.toFixed(1),
-        FLAT_SHADED: false
+        FLAT_SHADED: false,
       },
       uniforms: {
         uResolution: {
           type: "vec2",
-          value: new THREE.Vector2(size.width, size.height)
+          value: new THREE.Vector2(size.width, size.height),
         },
         uThickness: { type: "f", value: 0.02 },
         uTime: { type: "f", value: 2.5 },
         uColors: {
           type: "a",
-          value: colorToUniformsArray
+          value: colorToUniformsArray,
         },
         uAnalysers: {
           type: "a",
-          value: new Array(mapping.length).fill(0)
+          value: new Array(mapping.length).fill(0),
         },
         uAnalyserOffset: {
           type: "i",
-          value: 0
+          value: 0,
         },
         uRadialSegments: { type: "f", value: numSides },
         uStopCount: { type: "i", value: colorMappings.length },
@@ -212,10 +214,10 @@ export default ({ mapping, onResize }) => {
           value: [
             new THREE.Vector3(0, -3, 0),
             new THREE.Vector3(0, 0, 0),
-            new THREE.Vector3(0, 3, 0)
-          ]
-        }
-      }
+            new THREE.Vector3(0, 3, 0),
+          ],
+        },
+      },
     });
 
     // Audio
@@ -228,14 +230,14 @@ export default ({ mapping, onResize }) => {
       const sampleFilepath = `${samplesFolder}${c.sample}`;
       const positionalAudio = new THREE.PositionalAudio(listener);
       const analyser = new THREE.AudioAnalyser(positionalAudio, 32);
-      audioLoader.load(sampleFilepath, function(buffer) {
+      audioLoader.load(sampleFilepath, function (buffer) {
         positionalAudio.setBuffer(buffer);
         positionalAudio.setLoop(true);
         positionalAudio.setVolume(0.7);
         positionalAudio.play();
-        setSounds(sounds => [...sounds, positionalAudio]);
+        setSounds((sounds) => [...sounds, positionalAudio]);
         threeSounds.push(positionalAudio);
-        setPlayingStates(sounds.map(s => s.isPlaying));
+        setPlayingStates(sounds.map((s) => s.isPlaying));
         analyser.smoothingTimeConstant = 0.9;
         analysers.push(analyser);
         if (i === mapping.length - 1) {
@@ -275,7 +277,7 @@ export default ({ mapping, onResize }) => {
     var feelingMaterial = new THREE.MeshPhysicalMaterial({
       color: feelingColor,
       side: THREE.DoubleSide,
-      flatShading: false
+      flatShading: false,
     });
 
     let shapeOffset = 0;
@@ -407,7 +409,7 @@ export default ({ mapping, onResize }) => {
     instTubeMaterial.uniforms.uPoints.value = [
       new THREE.Vector3(0, -0.5, 0),
       new THREE.Vector3(0, 0, 0),
-      new THREE.Vector3(0, +0.5, 0)
+      new THREE.Vector3(0, +0.5, 0),
     ];
     const tubeMesh = new THREE.Mesh(tubeGeometry, instTubeMaterial);
     tubeMesh.frustumCulled = false;
@@ -432,9 +434,9 @@ export default ({ mapping, onResize }) => {
       vertexShader: backgroundVertexShader,
       fragmentShader: backgroundFragmentShader,
       uniforms: {
-        uResolution: { value: new THREE.Vector2(size.width, size.height) }
+        uResolution: { value: new THREE.Vector2(size.width, size.height) },
       },
-      depthWrite: false
+      depthWrite: false,
     });
     var planeGeometry = new THREE.PlaneGeometry(2, 2);
     var backgroundPlane = new THREE.Mesh(planeGeometry, backgroundMaterial);
@@ -442,6 +444,7 @@ export default ({ mapping, onResize }) => {
     renderer.autoClear = false;
 
     function onWindowResize() {
+      console.log("resize");
       if (canvasWrapperRef.current) {
         let newSize = canvasWrapperRef.current.getBoundingClientRect();
         camera.aspect = (newSize.width + 300) / newSize.height;
@@ -458,13 +461,14 @@ export default ({ mapping, onResize }) => {
     );
 
     function onPointerUp() {
-      // if (allLoaded) {
-      //   for (let i = 0; i < sounds.length; i++) {
-      //     sounds[i].play();
-      //   }
-      //   allLoaded = false;
-      // }
+      if (allLoaded) {
+        for (let i = 0; i < sounds.length; i++) {
+          sounds[i].play();
+        }
+        allLoaded = false;
+      }
     }
+
     const pointerUpHandler = window.addEventListener(
       "pointerup",
       onPointerUp,
@@ -474,7 +478,7 @@ export default ({ mapping, onResize }) => {
     // Render loop
     let frameCount = 0;
     let $dt = 0;
-    var render = function() {
+    var render = function () {
       requestAnimationFrame(render);
 
       if (!allLoaded) return;
@@ -537,7 +541,7 @@ export default ({ mapping, onResize }) => {
     render();
 
     return () => {
-      threeSounds.forEach(s => {
+      threeSounds.forEach((s) => {
         s.stop();
       });
       while (scene.children.length > 0) {
@@ -558,11 +562,11 @@ export default ({ mapping, onResize }) => {
                 key={i}
                 className={[
                   "sound-ui",
-                  playingStates[i] ? "active" : "inactive"
+                  playingStates[i] ? "active" : "inactive",
                 ].join(" ")}
                 onClick={() => {
                   s.isPlaying ? s.stop() : s.play();
-                  setPlayingStates(sounds.map(s => s.isPlaying));
+                  setPlayingStates(sounds.map((s) => s.isPlaying));
                 }}
               >
                 Sound {i}
@@ -577,16 +581,10 @@ export default ({ mapping, onResize }) => {
       <div className="canvas-wrapper" ref={canvasWrapperRef}>
         <canvas ref={canvasRef}></canvas>
       </div>
-      <button
-        className="download-rendering"
-        onClick={() => {
-          var rendering = canvasRef.current.toDataURL();
-          prepareDownload(rendering);
-        }}
-      >
-        <span className="text">Schnappschuss</span>
-        <span className="emoji">📷</span>
-      </button>
+      <ButtonDownloadRendering
+        prepareDownload={prepareDownload}
+        canvasRef={canvasRef.current}
+      />
       <div className="interaction-explanation">
         <IconMouse />
         <article className="text">
