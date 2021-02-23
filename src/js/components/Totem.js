@@ -10,6 +10,7 @@ import * as dat from "dat.gui";
 import { ButtonDownloadRendering } from "@vi.son/components";
 // Local imports
 import createLineGeometry from "../utils/createLineGeometry.js";
+import { remap, randomIndex } from "../utils/math.js";
 // Style imports
 import "../../sass/components/Totem.sass";
 // SVG imports
@@ -20,145 +21,119 @@ import tubeFragmentShader from "../../glsl/tubes.frag.glsl";
 import backgroundVertexShader from "../../glsl/background.vert.glsl";
 import backgroundFragmentShader from "../../glsl/background.frag.glsl";
 
-const remap = (v, a, b, c, d) => {
-  const newval = ((v - a) / (b - a)) * (d - c) + c;
-  return newval;
-};
+class Totem extends THREE.Group {
+  constructor(canvas, mapping) {
+    super();
 
-export default ({ mapping, onResize }) => {
-  const canvasRef = useRef();
-  const canvasWrapperRef = useRef();
-  const [sounds, setSounds] = useState([]);
-  const [playingStates, setPlayingStates] = useState([]);
+    // Mappings
+    this.mapping = mapping;
+    this._sounds = [];
+    this._setupMappings();
 
-  const getRandomIdx = (count) => {
-    return Math.floor(Math.random(), count);
-  };
+    // Scene elements
+    this.frameCount = 0;
+    this.deltatime = 0;
+    this.time = 0;
+    this.clock = new THREE.Clock();
+    this.clock.start();
 
-  const prepareDownload = (imageData) => {
-    const downloadLink = document.createElement("a");
-    const dataStr = imageData;
-    downloadLink.href = dataStr;
-    downloadLink.download = `${md5(Date.now())}.png`;
-    document.body.append(downloadLink);
-    downloadLink.click();
-  };
+    this._setupScene(canvas);
+    this._setupBackground();
+    this._setupTube();
 
-  const colorMappings = mapping
-    .filter((m) => m.type === "Farbe")
-    .map((m, i) => {
-      return {
-        index: i,
-        color: m.mapping,
-        sample: m.sample,
-      };
-    });
+    this._loadSounds();
 
-  const shapeMappings = mapping
-    .filter((m) => m.type === "Form")
-    .map((m, i) => {
-      return {
-        index: i,
-        shape: m.mapping,
-      };
-    });
+    // Mappings
+    this._mapFeelings();
+    this._mapShapes();
+    this._mapColors();
 
-  const feelingMappings = mapping
-    .filter((m) => m.type === "Gefühl")
-    .map((m, i) => {
-      return {
-        index: i,
-        feeling: m.mapping,
-        sample: m.sample,
-      };
-    });
-
-  let stats;
-  if (process.env.NODE_ENV === "development") {
-    console.log(`# Color Mappings: ${colorMappings.length}`);
-    console.log(`# Shape Mappings: ${shapeMappings.length}`);
-    console.log(`# Feeling Mappings: ${feelingMappings.length}`);
     // Stats
-    stats = new Stats();
-    document.body.appendChild(stats.dom);
+    this.stats = new Stats();
+    document.body.appendChild(this.stats.dom);
     // Gui
-    const gui = new dat.GUI();
+    this.gui = new dat.GUI();
   }
 
-  useEffect(() => {
-    // Size
-    const size = canvasWrapperRef.current.getBoundingClientRect();
+  pause() {
+    this.renderer.setAnimationLoop(null);
+    this.clock.stop();
+    this._sounds.map((s) => s.pause());
+  }
 
-    // Scene
-    const scene = new THREE.Scene();
-    const totem = new THREE.Group();
-    scene.add(totem);
-    totem.position.set(0, 0, 0);
+  continue() {
+    this.renderer.setAnimationLoop(this._renderLoop.bind(this));
+    this.clock.start();
+    this._sounds.map((s) => s.play());
+  }
 
-    // Renderer
-    const renderer = new THREE.WebGLRenderer({
-      canvas: canvasRef.current,
-      antialias: 1,
-      // alpha: true,
-      preserveDrawingBuffer: true,
-      toneMapping: THREE.ACESFilmicToneMapping,
-    });
-    renderer.setSize(size.width + 300, size.height);
-
-    // Camera
-    var camera = new THREE.PerspectiveCamera(
-      45,
-      (size.width + 300) / size.height,
-      0.01,
-      1000
+  _setupBackground() {
+    this.backgroundCamera = new THREE.OrthographicCamera(
+      -2 / this.size.width,
+      +2 / this.size.width,
+      +2 / this.size.width,
+      -2 / this.size.width,
+      -1,
+      100
     );
-    var controls = new OrbitControls(camera, renderer.domElement);
-    camera.position.set(0, 3.0, 0);
-    controls.update();
-    console.log(controls);
-    controls.enableZoom = true;
-    controls.enablePan = false;
-    controls.enableDamping = true;
-    controls.dampingFactor = 0.2;
-    // Audio listener
-    const analysers = [];
-    const listener = new THREE.AudioListener();
-    camera.add(listener);
-    const samplesFolder = `/assets/audio/audiovisio/`;
-
-    // Light
-    var light = new THREE.HemisphereLight(0xffffff, 0x666666, 3.75);
-    light.position.set(0, 10, 0);
-
-    scene.add(light);
-
-    const geometry = new THREE.SphereGeometry(0.05, 32, 32);
-    const material = new THREE.MeshPhysicalMaterial({
-      color: 0x424242,
-      roughness: 0.6,
-      metalness: 0.7,
+    this.backgroundScene = new THREE.Scene();
+    const backgroundMaterial = new THREE.ShaderMaterial({
+      vertexShader: backgroundVertexShader,
+      fragmentShader: backgroundFragmentShader,
+      uniforms: {
+        uResolution: {
+          value: new THREE.Vector2(
+            this.size.width * window.devicePixelRatio,
+            this.size.height * window.devicePixelRatio
+          ),
+        },
+      },
+      depthWrite: false,
     });
-    const sphere = new THREE.Mesh(geometry, material);
-    scene.add(sphere);
+    var planeGeometry = new THREE.PlaneGeometry(2, 2);
+    this.backgroundPlane = new THREE.Mesh(planeGeometry, backgroundMaterial);
+    this.backgroundScene.add(this.backgroundPlane);
+  }
 
-    const pmremGenerator = new THREE.PMREMGenerator(renderer);
-    let exrCubeRenderTarget;
-    pmremGenerator.compileEquirectangularShader();
+  _setupMappings() {
+    this.colorMappings = this.mapping
+      .filter((m) => m.type === "Farbe")
+      .map((m, i) => {
+        return {
+          index: i,
+          color: m.mapping,
+          sample: m.sample,
+        };
+      });
 
-    new EXRLoader()
-      .setDataType(THREE.UnsignedByteType)
-      .load(
-        "/assets/textures/abandoned_factory_canteen_01_1k.exr",
-        function (texture) {
-          exrCubeRenderTarget = pmremGenerator.fromEquirectangular(texture);
-          // scene.background = exrCubeRenderTarget.texture;
-          sphere.material.envMap = exrCubeRenderTarget.texture;
-          texture.dispose();
-        }
-      );
+    this.shapeMappings = this.mapping
+      .filter((m) => m.type === "Form")
+      .map((m, i) => {
+        return {
+          index: i,
+          shape: m.mapping,
+        };
+      });
 
-    // Tube material
-    const colors = colorMappings.map(
+    this.feelingMappings = this.mapping
+      .filter((m) => m.type === "Gefühl")
+      .map((m, i) => {
+        return {
+          index: i,
+          feeling: m.mapping,
+          sample: m.sample,
+        };
+      });
+
+    if (process.env.NODE_ENV === "development") {
+      console.log(`# Color Mappings: ${this.colorMappings.length}`);
+      console.log(`# Shape Mappings: ${this.shapeMappings.length}`);
+      console.log(`# Feeling Mappings: ${this.feelingMappings.length}`);
+    }
+  }
+
+  _setupTube() {
+    this.colors = this.colorMappings.map(
       (cm) =>
         new THREE.Vector3(
           cm.color[0] / 255.0,
@@ -166,18 +141,18 @@ export default ({ mapping, onResize }) => {
           cm.color[2] / 255.0
         )
     );
-    const colorToUniformsArray = new Array(mapping.length)
+    const colorToUniformsArray = new Array(this.mapping.length)
       .fill(0)
       .map((_, i) => {
-        if (colors[i]) {
-          return colors[i];
+        if (this.colors[i]) {
+          return this.colors[i];
         } else {
           return new THREE.Vector3();
         }
       });
     const numSides = 4;
     const subdivisions = 50;
-    const tubeMaterial = new THREE.RawShaderMaterial({
+    this.tubeMaterial = new THREE.RawShaderMaterial({
       vertexShader: tubeVertexShader,
       fragmentShader: tubeFragmentShader,
       side: THREE.FrontSide,
@@ -191,7 +166,7 @@ export default ({ mapping, onResize }) => {
       uniforms: {
         uResolution: {
           type: "vec2",
-          value: new THREE.Vector2(size.width, size.height),
+          value: new THREE.Vector2(this.size.width, this.size.height),
         },
         uThickness: { type: "f", value: 0.02 },
         uTime: { type: "f", value: 2.5 },
@@ -201,14 +176,14 @@ export default ({ mapping, onResize }) => {
         },
         uAnalysers: {
           type: "a",
-          value: new Array(mapping.length).fill(0),
+          value: new Array(this.mapping.length).fill(0),
         },
         uAnalyserOffset: {
           type: "i",
           value: 0,
         },
         uRadialSegments: { type: "f", value: numSides },
-        uStopCount: { type: "i", value: colorMappings.length },
+        uStopCount: { type: "i", value: this.colorMappings.length },
         uPoints: {
           type: "a",
           value: [
@@ -219,29 +194,78 @@ export default ({ mapping, onResize }) => {
         },
       },
     });
+  }
 
+  _setupScene(canvas) {
+    this.size = document
+      .querySelector(".canvas-wrapper")
+      .getBoundingClientRect();
+    // Scene & totem group
+    this.scene = new THREE.Scene();
+    this.totem = new THREE.Group();
+    this.scene.add(this.totem);
+    this.totem.position.set(0, 0, 0);
+
+    // Renderer
+    this.renderer = new THREE.WebGLRenderer({
+      canvas: canvas,
+      antialias: 1,
+      alpha: true,
+      preserveDrawingBuffer: true,
+      toneMapping: THREE.ACESFilmicToneMapping,
+    });
+    this.renderer.setSize(this.size.width, this.size.height);
+    this.renderer.setPixelRatio(window.devicePixelRatio);
+    this.renderer.autoClear = false;
+
+    // Camera
+    this.camera = new THREE.PerspectiveCamera(
+      45,
+      this.size.width / this.size.height,
+      0.01,
+      1000
+    );
+    const controls = new OrbitControls(this.camera, this.renderer.domElement);
+    this.camera.position.set(0, 3.0, 0);
+    controls.update();
+    controls.enableZoom = true;
+    controls.enablePan = false;
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.2;
+
+    // Audio listener
+    this.analysers = [];
+    this.listener = new THREE.AudioListener();
+    this.camera.add(this.listener);
+
+    // Light
+    var light = new THREE.HemisphereLight(0xffffff, 0x666666, 3.75);
+    light.position.set(0, 10, 0);
+    this.scene.add(light);
+  }
+
+  _loadSounds() {
     // Audio
-    const audioLoader = new THREE.AudioLoader();
+    this.samplesFolder = `/assets/audio/audiovisio/`;
+    this.audioLoader = new THREE.AudioLoader();
     // Show audio sources
     const audioVisualizerCubes = [];
     let allLoaded = false;
-    const threeSounds = [];
-    mapping.map((c, i) => {
-      const sampleFilepath = `${samplesFolder}${c.sample}`;
-      const positionalAudio = new THREE.PositionalAudio(listener);
+    this.mapping.map((c, i) => {
+      const sampleFilepath = `${this.samplesFolder}${c.sample}`;
+      const positionalAudio = new THREE.PositionalAudio(this.listener);
       const analyser = new THREE.AudioAnalyser(positionalAudio, 32);
-      audioLoader.load(sampleFilepath, function (buffer) {
+      this.audioLoader.load(sampleFilepath, (buffer) => {
         positionalAudio.setBuffer(buffer);
         positionalAudio.setLoop(true);
         positionalAudio.setVolume(0.7);
         positionalAudio.play();
-        setSounds((sounds) => [...sounds, positionalAudio]);
-        threeSounds.push(positionalAudio);
-        setPlayingStates(sounds.map((s) => s.isPlaying));
+        this._sounds.push(positionalAudio);
         analyser.smoothingTimeConstant = 0.9;
-        analysers.push(analyser);
-        if (i === mapping.length - 1) {
+        this.analysers.push(analyser);
+        if (i === this.mapping.length - 1) {
           allLoaded = true;
+          this.renderer.setAnimationLoop(this._renderLoop.bind(this));
           console.log("all loaded");
         }
       });
@@ -258,11 +282,38 @@ export default ({ mapping, onResize }) => {
       // positionalAudio.add(helper);
       // cube.add(positionalAudio);
     });
+  }
 
-    //// FEELING MAPPING TOTEM
+  _setupMaterialSphere() {
+    const geometry = new THREE.SphereGeometry(0.05, 32, 32);
+    const material = new THREE.MeshPhysicalMaterial({
+      color: 0x424242,
+      roughness: 0.6,
+      metalness: 0.7,
+    });
+    const sphere = new THREE.Mesh(geometry, material);
+    this.scene.add(sphere);
+
+    const pmremGenerator = new THREE.PMREMGenerator(this.renderer);
+    let exrCubeRenderTarget;
+    pmremGenerator.compileEquirectangularShader();
+
+    new EXRLoader()
+      .setDataType(THREE.UnsignedByteType)
+      .load(
+        "/assets/textures/abandoned_factory_canteen_01_1k.exr",
+        function (texture) {
+          exrCubeRenderTarget = pmremGenerator.fromEquirectangular(texture);
+          sphere.material.envMap = exrCubeRenderTarget.texture;
+          texture.dispose();
+        }
+      );
+  }
+
+  _mapFeelings() {
     let feelingColor = 0x2b13ff;
-    if (colors.length > 0) {
-      const randomColorVec = colors[getRandomIdx(colors.length)];
+    if (this.colors.length > 0) {
+      const randomColorVec = this.colors[randomIndex(this.colors.length)];
       const randomColor = new THREE.Color(
         randomColorVec.x / 3.0,
         randomColorVec.y / 3.0,
@@ -281,7 +332,7 @@ export default ({ mapping, onResize }) => {
     });
 
     let shapeOffset = 0;
-    feelingMappings.map((f, i) => {
+    this.feelingMappings.map((f, i) => {
       const point = f.feeling.point ? f.feeling.point : { x: 0, y: 0, z: 0 };
       const position = new THREE.Vector3(point.x, point.y, point.z);
       const sphereGeometry = new THREE.SphereBufferGeometry(0.26, 32, 32);
@@ -305,15 +356,16 @@ export default ({ mapping, onResize }) => {
     });
     // totem.add(feelingsGroup);
     console.log("Shape Offset", shapeOffset);
+  }
 
-    //// SHAPE MAPPING TOTEM
+  _mapShapes() {
     let colorOffset = 0;
     var shapeMaterial = new THREE.MeshLambertMaterial({ color: 0xcfddec });
     const shapeGroup = new THREE.Group();
     const radius = 0.5;
-    shapeMappings.map((s, i) => {
+    this.shapeMappings.map((s, i) => {
       colorOffset++;
-      const yStep = i / shapeMappings.length - 0.5;
+      const yStep = i / this.shapeMappings.length - 0.5;
       const position = new THREE.Vector3(
         radius * Math.sin(Math.random() * 3.1415 * 2.0),
         yStep,
@@ -400,98 +452,35 @@ export default ({ mapping, onResize }) => {
     });
     // totem.add(shapeGroup);
     console.log("Color Offset", colorOffset);
+  }
 
-    //// COLOR MAPPING TOTEM
-    colorMappings.map((c, i) => {});
-
+  _mapColors() {
+    this.colorMappings.map((c, i) => {});
+    const numSides = 4;
+    const subdivisions = 50;
     const tubeGeometry = createLineGeometry(numSides, subdivisions);
-    const instTubeMaterial = tubeMaterial.clone();
+    const instTubeMaterial = this.tubeMaterial.clone();
     instTubeMaterial.uniforms.uPoints.value = [
       new THREE.Vector3(0, -0.5, 0),
       new THREE.Vector3(0, 0, 0),
       new THREE.Vector3(0, +0.5, 0),
     ];
-    const tubeMesh = new THREE.Mesh(tubeGeometry, instTubeMaterial);
-    tubeMesh.frustumCulled = false;
-    totem.add(tubeMesh);
+    this.tubeMesh = new THREE.Mesh(tubeGeometry, instTubeMaterial);
+    this.tubeMesh.frustumCulled = false;
+    this.totem.add(this.tubeMesh);
+  }
 
-    // Clock + timings
-    var clock = new THREE.Clock();
-    clock.start();
-    let time = 0.0;
+  _renderLoop() {
+    this.deltaTime = this.clock.getDelta();
+    this.time += this.deltaTime;
 
-    // Background
-    var backgroundCamera = new THREE.OrthographicCamera(
-      -2 / size.width,
-      +2 / size.width,
-      +2 / size.width,
-      -2 / size.width,
-      -1,
-      100
-    );
-    const backgroundScene = new THREE.Scene();
-    const backgroundMaterial = new THREE.ShaderMaterial({
-      vertexShader: backgroundVertexShader,
-      fragmentShader: backgroundFragmentShader,
-      uniforms: {
-        uResolution: { value: new THREE.Vector2(size.width, size.height) },
-      },
-      depthWrite: false,
-    });
-    var planeGeometry = new THREE.PlaneGeometry(2, 2);
-    var backgroundPlane = new THREE.Mesh(planeGeometry, backgroundMaterial);
-    backgroundScene.add(backgroundPlane);
-    renderer.autoClear = false;
+    this.renderer.clear();
+    this.renderer.render(this.backgroundPlane, this.backgroundCamera);
 
-    function onWindowResize() {
-      console.log("resize");
-      if (canvasWrapperRef.current) {
-        let newSize = canvasWrapperRef.current.getBoundingClientRect();
-        camera.aspect = (newSize.width + 300) / newSize.height;
-        camera.updateProjectionMatrix();
-        backgroundCamera.aspect = newSize.width / newSize.height;
-        backgroundCamera.updateProjectionMatrix();
-        renderer.setSize(newSize.width, newSize.height);
-      }
-    }
-    const resizeHandler = window.addEventListener(
-      "resize",
-      onWindowResize,
-      false
-    );
+    this.renderer.render(this.scene, this.camera);
 
-    function onPointerUp() {
-      if (allLoaded) {
-        for (let i = 0; i < sounds.length; i++) {
-          sounds[i].play();
-        }
-        allLoaded = false;
-      }
-    }
-
-    const pointerUpHandler = window.addEventListener(
-      "pointerup",
-      onPointerUp,
-      false
-    );
-
-    // Render loop
-    let frameCount = 0;
-    let $dt = 0;
-    var render = function () {
-      requestAnimationFrame(render);
-
-      if (!allLoaded) return;
-      time = clock.getElapsedTime();
-      $dt = clock.getDelta();
-
-      renderer.clear();
-      renderer.render(backgroundPlane, backgroundCamera);
-      renderer.render(scene, camera);
-      stats.update();
-
-      // Analyzers
-      /*
+    // Analyzers
+    /*
       let analyzerValues = analysers.map((analyser, i) => {
         var data = analyser.getAverageFrequency();
         const val = remap(data, 0.0, 127.0, 0.1, 0.5);
@@ -535,20 +524,95 @@ export default ({ mapping, onResize }) => {
         }
       });
       */
-      tubeMesh.material.uniforms.uTime.value = time;
-      frameCount++;
-    };
-    render();
+    this.tubeMesh.material.uniforms.uTime.value = this.time;
+    // frameCount++;
+
+    if (this.stats) {
+      this.stats.update();
+    }
+  }
+}
+
+export default ({ mapping, onResize, paused }) => {
+  const canvasRef = useRef();
+  const canvasWrapperRef = useRef();
+  const [sounds, setSounds] = useState([]);
+  const [renderer, setRenderer] = useState(null);
+  const [renderLoop, setRenderLoop] = useState(null);
+  const [playingStates, setPlayingStates] = useState([]);
+  const [totem, setTotem] = useState(null);
+
+  const prepareDownload = (imageData) => {
+    const downloadLink = document.createElement("a");
+    const dataStr = imageData;
+    downloadLink.href = dataStr;
+    downloadLink.download = `${md5(Date.now())}.png`;
+    document.body.append(downloadLink);
+    downloadLink.click();
+  };
+
+  useEffect(() => {
+    if (paused && totem) {
+      console.log("pause");
+      totem.pause();
+    }
+    if (!paused && totem) {
+      console.log("contiune");
+      totem.continue();
+    }
+  }, [paused]);
+
+  useEffect(() => {
+    if (canvasRef.current) {
+      const totem = new Totem(canvasRef.current, mapping);
+      setTotem(totem);
+    }
+
+    function onWindowResize() {
+      // if (canvasWrapperRef.current) {
+      //   let newSize = canvasWrapperRef.current.getBoundingClientRect();
+      //   camera.aspect = newSize.width / newSize.height;
+      //   camera.updateProjectionMatrix();
+      //   backgroundCamera.aspect = newSize.width / newSize.height;
+      //   backgroundCamera.updateProjectionMatrix();
+      //   backgroundMaterial.uniforms.uResolution.value = new THREE.Vector2(
+      //     size.width * window.devicePixelRatio,
+      //     size.height * window.devicePixelRatio
+      //   );
+      //   renderer.setSize(newSize.width, newSize.height);
+      // }
+    }
+
+    const resizeHandler = window.addEventListener(
+      "resize",
+      onWindowResize,
+      false
+    );
+
+    function onPointerUp() {
+      // if (allLoaded) {
+      //   for (let i = 0; i < sounds.length; i++) {
+      //     sounds[i].play();
+      //   }
+      //   allLoaded = false;
+      // }
+    }
+
+    const pointerUpHandler = window.addEventListener(
+      "pointerup",
+      onPointerUp,
+      false
+    );
 
     return () => {
-      threeSounds.forEach((s) => {
-        s.stop();
-      });
-      while (scene.children.length > 0) {
-        scene.remove(scene.children[0]);
-      }
-      renderer.dispose();
-      window.removeEventListener("resize", resizeHandler);
+      // threeSounds.forEach((s) => {
+      //   s.stop();
+      // });
+      // while (scene.children.length > 0) {
+      //   scene.remove(scene.children[0]);
+      // }
+      // renderer.dispose();
+      // window.removeEventListener("resize", resizeHandler);
     };
   }, []);
 
