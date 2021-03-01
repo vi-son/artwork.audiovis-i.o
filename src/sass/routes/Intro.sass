@@ -1,0 +1,22 @@
+@import @vi.son/rouge/1-settings/_colors.sass
+@import @vi.son/rouge/1-settings/_breakpoints.sass
+@import @vi.son/rouge/2-tools/_media-queries.sass
+
+.intro
+  display: flex
+  flex-direction: column
+  justify-content: center
+  flex-grow: 1
+  align-self: center
+  margin: 60px 0
+  width: calc(100vw - 2 * 30px)
+  +from($tablets)
+    max-width: 60ch
+  +from($desktops)
+    max-width: 80ch
+
+  .heading
+    margin-bottom: 40px
+
+  .to-flow
+    flex-grow: 0

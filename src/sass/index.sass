@@ -28,6 +28,7 @@ $font-root: "@vi.son/rouge/fonts"
 /* 5. Objects - cosmetic-free design patterns
 @import @vi.son/rouge/5-objects/_button.send.sass
 @import @vi.son/rouge/5-objects/_emoji.sass
+@import @vi.son/rouge/5-objects/_btn.sass
 
 // @TODO refactor
 .nav
@@ -36,11 +37,17 @@ $font-root: "@vi.son/rouge/fonts"
   flex-direction: column
   position: fixed
   bottom: 0
+  li
+    display: flex
+    justify-content: flex-start
+    align-items: flex-start
+    flex-direction: column
 
 .ui
-  z-index: 9999
+  z-index: 0
   display: flex
   flex-direction: column
   position: fixed
   bottom: 0
-  left: 200px
+  height: 100vh
+  width: 100vw

@@ -1,15 +1,26 @@
 import React, { useState, useEffect } from "react";
 import ReactDOM from "react-dom";
-import { BrowserRouter as Router, Switch, Route, Link } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Switch,
+  Route,
+  Link,
+  useLocation,
+} from "react-router-dom";
 import { Narrative } from "@vi.son/components";
 import { ButtonCloseNarrative } from "@vi.son/components";
 import { ButtonOpenNarrative } from "@vi.son/components";
 import { ButtonToExhibition } from "@vi.son/components";
 // Local imports
-import Totem from "./components/Totem.js";
+import Totem from "./artwork/Totem.js";
+import Intro from "./routes/Intro.js";
 import { get } from "./api.js";
 // Style imports
-import "../sass/index.sass";
+import "@sass/index.sass";
+
+function useQuery() {
+  return new URLSearchParams(useLocation().search);
+}
 
 const Artwork = () => {
   const [showNarrative, setShowNarrative] = useState(false);
@@ -17,6 +28,8 @@ const Artwork = () => {
 
   const exampleMapping = require("../json/08f406489239afeddc1391e4125cf37b.json");
   const mapping = undefined;
+
+  const query = useQuery();
 
   useEffect(() => {
     console.group("Version");
@@ -29,51 +42,61 @@ const Artwork = () => {
 
   return (
     <>
+      {query.get("state")}
       <div className="artwork">
         {mapping !== undefined ? (
-          <Totem mapping={mapping} paused={showNarrative} />
+          <Totem
+            mapping={mapping}
+            paused={showNarrative}
+            state={query.get("state")}
+          />
         ) : (
-          <Totem mapping={exampleMapping} paused={showNarrative} />
+          <Totem
+            mapping={exampleMapping}
+            paused={showNarrative}
+            state={query.get("state")}
+          />
         )}
-
-        <ButtonOpenNarrative
-          showNarrative={showNarrative}
-          setShowNarrative={setShowNarrative}
-        />
       </div>
 
-      <Router>
-        <div>
-          <nav className="nav">
-            <ul>
-              <li>
-                <Link to="/">start</Link>
-              </li>
-              <li>
-                <Link to="/flow">flow</Link>
-              </li>
-              <li>
-                <Link to="/end">end</Link>
-              </li>
-            </ul>
-          </nav>
+      <div>
+        <nav className="nav">
+          <ul>
+            <li>
+              <Link to="/">start</Link>
+            </li>
+            <li>
+              <Link to="/flow?state=color-input">flow/color</Link>
+              <Link to="/flow?state=shape-input">flow/shape</Link>
+              <Link to="/flow?state=feeling-input">flow/feeling</Link>
+            </li>
+            <li>
+              <Link to="/end?state=totem">end</Link>
+            </li>
+          </ul>
+        </nav>
 
-          <Switch>
-            <Route path="/flow">
-              <h1 className="ui">Flow</h1>
-            </Route>
-            <Route path="/end">
-              <h1 className="ui">End</h1>
-            </Route>
-            <Route path="/">
-              <h1 className="ui">Start</h1>
-            </Route>
-          </Switch>
-        </div>
-      </Router>
+        <Switch>
+          <Route path="/flow">
+            <h1 className="ui">Flow</h1>
+          </Route>
+          <Route path="/end">
+            <h1 className="ui">End</h1>
+          </Route>
+          <Route path="/">
+            <div className="ui">
+              <Intro />
+            </div>
+          </Route>
+        </Switch>
+      </div>
 
-      {/* <ButtonToExhibition /> */}
+      <ButtonToExhibition />
 
+      <ButtonOpenNarrative
+        showNarrative={showNarrative}
+        setShowNarrative={setShowNarrative}
+      />
       <ButtonCloseNarrative
         showNarrative={showNarrative}
         setShowNarrative={setShowNarrative}
@@ -88,4 +111,9 @@ const Artwork = () => {
 };
 
 const mount = document.querySelector("#mount");
-ReactDOM.render(<Artwork />, mount);
+ReactDOM.render(
+  <Router>
+    <Artwork />
+  </Router>,
+  mount
+);
