@@ -4,36 +4,7 @@
   display: flex
   justify-content: center
 
-  .controls
-    display: flex
-    div
-      margin-right: 30px
-
-  .column
-    display: flex
-    flex-direction: column
-    span
-      display: flex
-      flex-direction: column
-      
-
-  .btn-play,
-  .btn-pause
-    cursor: pointer
+  .play
+    transition: fill 300ms ease
     &:hover
-      color: var(--color-curacao)
-
-  .timeline
-    background: var(--color-darkness)
-    margin: 20px 0
-    width: 100%
-    height: 20px
-    position: relative
-    cursor: pointer
-
-    .playhead
-      height: 20px
-      background: var(--color-peacock)
-      width: 10px
-      cursor: pointer
-      position: absolute
+      fill: var(--color-darkness)

@@ -1,6 +1,7 @@
 // node_modules imports
 import React, { useState, useRef, useEffect } from "react";
 import * as THREE from "three";
+import TWEEN from "@tweenjs/tween.js";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { PositionalAudioHelper } from "three/examples/jsm/helpers/PositionalAudioHelper.js";
 import { EXRLoader } from "three/examples/jsm/loaders/EXRLoader.js";
@@ -11,6 +12,12 @@ import { ButtonDownloadRendering } from "@vi.son/components";
 // Local imports
 import createLineGeometry from "../utils/createLineGeometry.js";
 import { remap, randomIndex } from "../utils/math.js";
+
+import Mapper from "./Mapper.js";
+import ColorMapper from "./ColorMapper.js";
+import ShapeMapper from "./ShapeMapper.js";
+import FeelingMapper from "./FeelingMapper.js";
+
 // Style imports
 import "../../sass/components/Totem.sass";
 // SVG imports
@@ -24,6 +31,9 @@ import backgroundFragmentShader from "../../glsl/background.frag.glsl";
 class Totem extends THREE.Group {
   constructor(canvas, mapping) {
     super();
+
+    this._state = null;
+    this._canvas = canvas;
 
     // Mappings
     this.mapping = mapping;
@@ -40,8 +50,14 @@ class Totem extends THREE.Group {
     this._setupScene(canvas);
     this._setupBackground();
     this._setupTube();
+    this._setupRaycasting();
 
-    this._loadSounds();
+    this._mapper = new Mapper();
+    this.colorInput = new ColorMapper(this.renderer);
+    this.shapeMapper = new ShapeMapper();
+    this.feelingMapper = new FeelingMapper();
+
+    //this._loadSounds(); // @TODO
 
     // Mappings
     this._mapFeelings();
@@ -67,6 +83,22 @@ class Totem extends THREE.Group {
     this._sounds.map((s) => s.play());
   }
 
+  setState(state) {
+    this._state = state;
+    if (this._state === "shape-input") {
+      this.shapeMapper.fadeIn();
+    }
+    if (this._state === "color-input") {
+      this.colorInput.fadeIn();
+    }
+  }
+
+  _setupRaycasting() {
+    this._raycaster = new THREE.Raycaster();
+    this._raycastHit = [];
+    this._mousePosition = new THREE.Vector2();
+  }
+
   _setupBackground() {
     this.backgroundCamera = new THREE.OrthographicCamera(
       -2 / this.size.width,
@@ -77,7 +109,7 @@ class Totem extends THREE.Group {
       100
     );
     this.backgroundScene = new THREE.Scene();
-    const backgroundMaterial = new THREE.ShaderMaterial({
+    this.backgroundMaterial = new THREE.ShaderMaterial({
       vertexShader: backgroundVertexShader,
       fragmentShader: backgroundFragmentShader,
       uniforms: {
@@ -91,7 +123,10 @@ class Totem extends THREE.Group {
       depthWrite: false,
     });
     var planeGeometry = new THREE.PlaneGeometry(2, 2);
-    this.backgroundPlane = new THREE.Mesh(planeGeometry, backgroundMaterial);
+    this.backgroundPlane = new THREE.Mesh(
+      planeGeometry,
+      this.backgroundMaterial
+    );
     this.backgroundScene.add(this.backgroundPlane);
   }
 
@@ -200,6 +235,7 @@ class Totem extends THREE.Group {
     this.size = document
       .querySelector(".canvas-wrapper")
       .getBoundingClientRect();
+
     // Scene & totem group
     this.scene = new THREE.Scene();
     this.totem = new THREE.Group();
@@ -211,12 +247,13 @@ class Totem extends THREE.Group {
       canvas: canvas,
       antialias: 1,
       alpha: true,
-      preserveDrawingBuffer: true,
-      toneMapping: THREE.ACESFilmicToneMapping,
+      // preserveDrawingBuffer: true,
+      // toneMapping: THREE.ACESFilmicToneMapping,
     });
     this.renderer.setSize(this.size.width, this.size.height);
     this.renderer.setPixelRatio(window.devicePixelRatio);
     this.renderer.autoClear = false;
+    this.renderer.setAnimationLoop(this._renderLoop.bind(this));
 
     // Camera
     this.camera = new THREE.PerspectiveCamera(
@@ -225,13 +262,13 @@ class Totem extends THREE.Group {
       0.01,
       1000
     );
-    const controls = new OrbitControls(this.camera, this.renderer.domElement);
-    this.camera.position.set(0, 3.0, 0);
-    controls.update();
-    controls.enableZoom = true;
-    controls.enablePan = false;
-    controls.enableDamping = true;
-    controls.dampingFactor = 0.2;
+    this.controls = new OrbitControls(this.camera, this.renderer.domElement);
+    this.camera.position.set(0, 0.0, 4.0);
+    this.controls.update();
+    this.controls.enableZoom = true;
+    this.controls.enablePan = false;
+    this.controls.enableDamping = false;
+    this.controls.dampingFactor = 0.1;
 
     // Audio listener
     this.analysers = [];
@@ -242,6 +279,50 @@ class Totem extends THREE.Group {
     var light = new THREE.HemisphereLight(0xffffff, 0x666666, 3.75);
     light.position.set(0, 10, 0);
     this.scene.add(light);
+  }
+
+  handlePointerMove(e) {
+    this._mapper.handlePointerMove(e, this.size);
+    this._mousePosition.x =
+      ((e.clientX - this.size.x) / this.size.width) * 2 - 1;
+    this._mousePosition.y =
+      -((e.clientY - this.size.y) / this.size.height) * 2 + 1;
+  }
+
+  handlePointerDown(e) {
+    this._mapper.handlePointerDown(e);
+    if (this._state === "shape-input") {
+      this.shapeMapper.handlePointerDown();
+    }
+  }
+
+  handlePointerUp(e) {
+    this._mapper.handlePointerUp(e);
+    if (this._state === "shape-input") {
+      this.shapeMapper.handlePointerUp();
+    }
+  }
+
+  handleResize(e) {
+    const canvasWrapper = document.querySelector(".canvas-wrapper");
+    if (canvasWrapper) {
+      let newSize = canvasWrapper.getBoundingClientRect();
+      // Update camera
+      this.camera.aspect = newSize.width / newSize.height;
+      this.camera.updateProjectionMatrix();
+      this.controls.update();
+      // Update background
+      this.backgroundCamera.aspect = newSize.width / newSize.height;
+      this.backgroundCamera.updateProjectionMatrix();
+      this.backgroundMaterial.uniforms.uResolution.value = new THREE.Vector2(
+        newSize.width * window.devicePixelRatio,
+        newSize.height * window.devicePixelRatio
+      );
+      // Update renderer
+      this.renderer.setSize(newSize.width, newSize.height);
+
+      this._mapper.handleResize(this.camera.aspect);
+    }
   }
 
   _loadSounds() {
@@ -265,22 +346,9 @@ class Totem extends THREE.Group {
         this.analysers.push(analyser);
         if (i === this.mapping.length - 1) {
           allLoaded = true;
-          this.renderer.setAnimationLoop(this._renderLoop.bind(this));
           console.log("all loaded");
         }
       });
-      // var geometry = new THREE.BoxBufferGeometry(0.5, 0.5, 0.5);
-      // var material = new THREE.MeshBasicMaterial({
-      //   color: 0xffffff,
-      //   opacity: 0,
-      //   transparent: true
-      // });
-      // var cube = new THREE.Mesh(geometry, material);
-      // cube.position.set(0, i / (colorMappings.length - 1) - 0.5, 0);
-      // audioVisualizerCubes.push(cube);
-      // var helper = new PositionalAudioHelper(positionalAudio);
-      // positionalAudio.add(helper);
-      // cube.add(positionalAudio);
     });
   }
 
@@ -470,14 +538,43 @@ class Totem extends THREE.Group {
     this.totem.add(this.tubeMesh);
   }
 
+  _raycastLoop() {
+    this._raycaster.setFromCamera(this._mousePosition, this.camera);
+    if (this._state === "shape-input") {
+      this._hit = this._raycaster.intersectObjects(
+        this.shapeMapper.raycastables
+      );
+      this.shapeMapper.handleRaycast(this._hit);
+    }
+  }
+
   _renderLoop() {
+    TWEEN.update();
     this.deltaTime = this.clock.getDelta();
     this.time += this.deltaTime;
 
     this.renderer.clear();
     this.renderer.render(this.backgroundPlane, this.backgroundCamera);
 
-    this.renderer.render(this.scene, this.camera);
+    if (this._state === "totem") {
+      this.renderer.render(this.scene, this.camera);
+    }
+    // if (this._state !== "totem") {
+    //   this.renderer.render(this._mapper.scene, this.camera);
+    // }
+    if (this._state === "color-input") {
+      this.renderer.render(this.colorInput.scene, this.camera);
+      this.colorInput.raycast();
+    }
+    if (this._state === "shape-input") {
+      this.shapeMapper.update(this.deltaTime);
+      this.renderer.render(this.shapeMapper.scene, this.camera);
+    }
+    if (this._state === "feeling-input") {
+      this.renderer.render(this.feelingMapper.scene, this.camera);
+    }
+
+    this._raycastLoop();
 
     // Analyzers
     /*
@@ -533,7 +630,7 @@ class Totem extends THREE.Group {
   }
 }
 
-export default ({ mapping, onResize, paused }) => {
+export default ({ mapping, onResize, paused, state }) => {
   const canvasRef = useRef();
   const canvasWrapperRef = useRef();
   const [sounds, setSounds] = useState([]);
@@ -563,46 +660,37 @@ export default ({ mapping, onResize, paused }) => {
   }, [paused]);
 
   useEffect(() => {
+    console.log("STATE", state);
+    if (totem) {
+      totem.setState(state);
+    }
+  }, [state]);
+
+  useEffect(() => {
     if (canvasRef.current) {
       const totem = new Totem(canvasRef.current, mapping);
+      const resizeHandler = window.addEventListener(
+        "resize",
+        totem.handleResize.bind(totem),
+        false
+      );
+      const pointerUpHandler = window.addEventListener(
+        "pointerup",
+        totem.handlePointerUp.bind(totem),
+        false
+      );
+      const pointerDownHandler = window.addEventListener(
+        "pointerdown",
+        totem.handlePointerDown.bind(totem),
+        false
+      );
+      const pointerMoveHandler = window.addEventListener(
+        "pointermove",
+        totem.handlePointerMove.bind(totem),
+        false
+      );
       setTotem(totem);
     }
-
-    function onWindowResize() {
-      // if (canvasWrapperRef.current) {
-      //   let newSize = canvasWrapperRef.current.getBoundingClientRect();
-      //   camera.aspect = newSize.width / newSize.height;
-      //   camera.updateProjectionMatrix();
-      //   backgroundCamera.aspect = newSize.width / newSize.height;
-      //   backgroundCamera.updateProjectionMatrix();
-      //   backgroundMaterial.uniforms.uResolution.value = new THREE.Vector2(
-      //     size.width * window.devicePixelRatio,
-      //     size.height * window.devicePixelRatio
-      //   );
-      //   renderer.setSize(newSize.width, newSize.height);
-      // }
-    }
-
-    const resizeHandler = window.addEventListener(
-      "resize",
-      onWindowResize,
-      false
-    );
-
-    function onPointerUp() {
-      // if (allLoaded) {
-      //   for (let i = 0; i < sounds.length; i++) {
-      //     sounds[i].play();
-      //   }
-      //   allLoaded = false;
-      // }
-    }
-
-    const pointerUpHandler = window.addEventListener(
-      "pointerup",
-      onPointerUp,
-      false
-    );
 
     return () => {
       // threeSounds.forEach((s) => {
@@ -620,23 +708,23 @@ export default ({ mapping, onResize, paused }) => {
     <div className="totem">
       {process.env.NODE_ENV === "development" ? (
         <div className="sounds-ui">
-          {sounds.map((s, i) => {
-            return (
-              <span
-                key={i}
-                className={[
-                  "sound-ui",
-                  playingStates[i] ? "active" : "inactive",
-                ].join(" ")}
-                onClick={() => {
-                  s.isPlaying ? s.stop() : s.play();
-                  setPlayingStates(sounds.map((s) => s.isPlaying));
-                }}
-              >
-                Sound {i}
-              </span>
-            );
-          })}
+          {/* {sounds.map((s, i) => { */}
+          {/*   return ( */}
+          {/*     <span */}
+          {/*       key={i} */}
+          {/*       className={[ */}
+          {/*         "sound-ui", */}
+          {/*         playingStates[i] ? "active" : "inactive", */}
+          {/*       ].join(" ")} */}
+          {/*       onClick={() => { */}
+          {/*         s.isPlaying ? s.stop() : s.play(); */}
+          {/*         setPlayingStates(sounds.map((s) => s.isPlaying)); */}
+          {/*       }} */}
+          {/*     > */}
+          {/*       Sound {i} */}
+          {/*     </span> */}
+          {/*   ); */}
+          {/* })} */}
         </div>
       ) : (
         <></>
@@ -645,16 +733,17 @@ export default ({ mapping, onResize, paused }) => {
       <div className="canvas-wrapper" ref={canvasWrapperRef}>
         <canvas ref={canvasRef}></canvas>
       </div>
-      <ButtonDownloadRendering
-        prepareDownload={prepareDownload}
-        canvasRef={canvasRef.current}
-      />
-      <div className="interaction-explanation">
-        <IconMouse />
-        <article className="text">
-          Klick und ziehen zum Drehen Mausrad für Zoom
-        </article>
-      </div>
+      {/* <ButtonDownloadRendering */}
+      {/*   prepareDownload={prepareDownload} */}
+      {/*   canvasRef={canvasRef.current} */}
+      {/* /> */}
+
+      {/* <div className="interaction-explanation"> */}
+      {/*   <IconMouse /> */}
+      {/*   <article className="text"> */}
+      {/*     Klick und ziehen zum Drehen Mausrad für Zoom */}
+      {/*   </article> */}
+      {/* </div> */}
     </div>
   );
 };

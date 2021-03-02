@@ -1,7 +1,7 @@
 // node_modules imports
 import React from "react";
 // Style imports
-import "../../sass/components/AudioPlayer.sass";
+import "@sass/components/AudioPlayer.sass";
 
 class AudioPlayer extends React.Component {
   constructor(props) {
@@ -14,7 +14,7 @@ class AudioPlayer extends React.Component {
       currentTime: 0,
       volume: 0,
       fadeInterval: null,
-      slider: 0
+      slider: 0,
     };
   }
 
@@ -27,13 +27,13 @@ class AudioPlayer extends React.Component {
     const intv = setInterval(() => {
       if (this.state.volume >= 1.0) {
         clearInterval(this.state.fadeInterval);
-        this.setState(state => ({ volume: 1 }));
+        this.setState((state) => ({ volume: 1 }));
       } else {
-        this.setState(state => ({ volume: this.state.volume + step }));
+        this.setState((state) => ({ volume: this.state.volume + step }));
         this.audio.volume = Math.min(this.state.volume, 1.0);
       }
     }, timeStep);
-    this.setState(state => ({ fadeInterval: intv }));
+    this.setState((state) => ({ fadeInterval: intv }));
   }
 
   fadeOutAndStop() {
@@ -44,14 +44,14 @@ class AudioPlayer extends React.Component {
     const intv = setInterval(() => {
       if (this.state.volume <= 0.0) {
         clearInterval(this.state.fadeInterval);
-        this.setState(state => ({ volume: 0 }));
+        this.setState((state) => ({ volume: 0 }));
         this.audio.pause();
       } else {
-        this.setState(state => ({ volume: this.state.volume - step }));
+        this.setState((state) => ({ volume: this.state.volume - step }));
         this.audio.volume = Math.max(this.state.volume, 0.0);
       }
     }, timeStep);
-    this.setState(state => ({ fadeInterval: intv }));
+    this.setState((state) => ({ fadeInterval: intv }));
   }
 
   componentWillUnmount() {
@@ -69,7 +69,7 @@ class AudioPlayer extends React.Component {
     this.audio.preload = "auto";
     this.audio.addEventListener("canplaythrough", () => {
       this.setState({
-        duration: this.audio.duration
+        duration: this.audio.duration,
       });
     });
     this.audio.ontimeupdate = this.timeUpdate.bind(this);
@@ -88,21 +88,25 @@ class AudioPlayer extends React.Component {
       if (this.state.volume < 0.0) {
         clearInterval(this.state.fadeInterval);
         this.audio.pause();
-        this.setState(state => ({ volume: 0, playing: false, currentTime: 0 }));
+        this.setState((state) => ({
+          volume: 0,
+          playing: false,
+          currentTime: 0,
+        }));
         this.audio.volume = this.state.volume;
         this.audio.src = this.props.audiosrc;
         this.props.onStopped();
       } else {
-        this.setState(state => ({ volume: this.state.volume - step }));
+        this.setState((state) => ({ volume: this.state.volume - step }));
         this.audio.volume = Math.max(this.state.volume, 0.0);
       }
     }, timeStep);
-    this.setState(state => ({ fadeInterval: intv }));
+    this.setState((state) => ({ fadeInterval: intv }));
   }
 
   timeUpdate() {
-    this.setState(state => ({
-      currentTime: this.audio.currentTime
+    this.setState((state) => ({
+      currentTime: this.audio.currentTime,
     }));
   }
 
@@ -149,9 +153,9 @@ class AudioPlayer extends React.Component {
       <div className="audio-player">
         <svg width={200} height={200}>
           <g
-            stroke="var(--color-darkness)"
+            stroke="var(--color-curacao)"
             fill="none"
-            strokeWidth="10"
+            strokeWidth="6"
             strokeLinecap="round"
             transform="translate(50, 50)"
           >
@@ -161,12 +165,13 @@ class AudioPlayer extends React.Component {
               r={r}
               fill="none"
               strokeWidth="2"
-              stroke="var(--color-dirtysnow)"
+              stroke="var(--color-snow)"
             />
             <path
               d={`M ${startX} ${startY} A ${r} ${r} 0 ${way} ${sweep} ${endX} ${endY}`}
             />
             <polygon
+              className="play"
               style={{ cursor: "pointer" }}
               transform={`translate(${cx + r / 2},${cy + r / 2})`}
               points={
@@ -176,7 +181,7 @@ class AudioPlayer extends React.Component {
               }
               fill="var(--color-curacao)"
               stroke="none"
-              onClick={e => {
+              onClick={(e) => {
                 this.setState({ playing: !this.state.playing });
                 this.state.playing
                   ? this.fadeOutAndStop()

@@ -1,63 +1,42 @@
 .flow
   display: grid
-  width: 100vw
-  grid-template-columns: 2fr 5fr
-  .left
-    margin-bottom: 80px
-    display: flex
-    flex-direction: column
-    justify-content: space-between
-    align-items: center
-    .description
-      text-align: center
-      margin-top: 10vh
-      h3,
-      article
-        color: var(--color-darkness)
-    .empty
-      height: 50vh
-
-  .right
-    margin-bottom: 80px
 
   .description
-    text-align: left
-    h3
-      font-size: 1.9375rem
-      text-align: left
-      color: var(--color-darkness)
-      .emoji
-        width: 52px
-        display: inline-block
-    article
-      margin-left: 60px
-      color: var(--color-darkness)
+    display: grid
+    grid-template-columns: 60px auto
+    grid-template-rows: auto auto
+    .title
+      margin: 0
+    .emoji
+      grid-row: span 2
+      align-self: center
 
-  .button-wrapper
+    &.step-1
+      position: fixed
+      top: 60px
+      left: 60px
+    &.step-3
+      position: fixed
+      right: 60px
+      top: 50%
+
+  .next-sample
     position: fixed
-    right: 5vw
-    bottom: 5vw
-    display: flex
-    flex-direction: column
-    .next-sample
-      background: var(--color-curacao)
-      color: var(--color-snow)
-      transition: background 200ms ease
-      &:hover
-        color: var(--color-snow)
-        background: var(--color-darkness)
-      &:disabled
-        opacity: 0.05
-        background: 0
-      &:hover
-          box-shadow: none
+    top: 60%
+    right: 60px
+
+
+  .audio-player
+    margin-top: 100px
+
 
   .mapping-debug
+    display: none
     position: fixed
     left: 0
     bottom: 0
     z-index: 999
-    background: rgba(0, 0, 0, 0.8)
+    background: black
     max-width: 50ch
     color: white
     font-size: 0.9rem

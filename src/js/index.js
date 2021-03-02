@@ -14,6 +14,7 @@ import { ButtonToExhibition } from "@vi.son/components";
 // Local imports
 import Totem from "./artwork/Totem.js";
 import Intro from "./routes/Intro.js";
+import Flow from "./routes/Flow.js";
 import { get } from "./api.js";
 // Style imports
 import "@sass/index.sass";
@@ -78,10 +79,21 @@ const Artwork = () => {
 
         <Switch>
           <Route path="/flow">
-            <h1 className="ui">Flow</h1>
+            <div className="ui">
+              <Flow />
+              <ButtonOpenNarrative
+                showNarrative={showNarrative}
+                setShowNarrative={setShowNarrative}
+              />
+            </div>
           </Route>
           <Route path="/end">
-            <h1 className="ui">End</h1>
+            <div className="ui">
+              <ButtonOpenNarrative
+                showNarrative={showNarrative}
+                setShowNarrative={setShowNarrative}
+              />
+            </div>
           </Route>
           <Route path="/">
             <div className="ui">
@@ -93,10 +105,6 @@ const Artwork = () => {
 
       <ButtonToExhibition />
 
-      <ButtonOpenNarrative
-        showNarrative={showNarrative}
-        setShowNarrative={setShowNarrative}
-      />
       <ButtonCloseNarrative
         showNarrative={showNarrative}
         setShowNarrative={setShowNarrative}
