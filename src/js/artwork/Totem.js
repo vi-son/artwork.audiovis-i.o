@@ -282,24 +282,36 @@ class Totem extends THREE.Group {
   }
 
   handlePointerMove(e) {
-    this._mapper.handlePointerMove(e, this.size);
+    this._mapper.handlePointerMove(e, { size: this.size });
     this._mousePosition.x =
       ((e.clientX - this.size.x) / this.size.width) * 2 - 1;
     this._mousePosition.y =
       -((e.clientY - this.size.y) / this.size.height) * 2 + 1;
+    if (this._state === "color-input") {
+      this.colorInput.handlePointerMove(e, { size: this.size });
+    }
   }
 
   handlePointerDown(e) {
     this._mapper.handlePointerDown(e);
     if (this._state === "shape-input") {
-      this.shapeMapper.handlePointerDown();
+      this.shapeMapper.handlePointerDown(e);
+    }
+    if (this._state === "color-input") {
+      this.colorInput.handlePointerDown(e);
     }
   }
 
   handlePointerUp(e) {
     this._mapper.handlePointerUp(e);
     if (this._state === "shape-input") {
-      this.shapeMapper.handlePointerUp();
+      this.shapeMapper.handlePointerUp(e);
+    }
+    if (this._state === "color-input") {
+      this.colorInput.handlePointerUp(e, {
+        camera: this.camera,
+        controls: this.controls,
+      });
     }
   }
 
@@ -546,6 +558,12 @@ class Totem extends THREE.Group {
       );
       this.shapeMapper.handleRaycast(this._hit);
     }
+    if (this._state === "color-input") {
+      this._hit = this._raycaster.intersectObjects(
+        this.colorInput.raycastables
+      );
+      this.colorInput.handleRaycast(this._hit, this.camera.position);
+    }
   }
 
   _renderLoop() {
@@ -563,8 +581,10 @@ class Totem extends THREE.Group {
     //   this.renderer.render(this._mapper.scene, this.camera);
     // }
     if (this._state === "color-input") {
+      this.colorInput.update(this.deltaTime, {
+        cameraPosition: this.camera.position,
+      });
       this.renderer.render(this.colorInput.scene, this.camera);
-      this.colorInput.raycast();
     }
     if (this._state === "shape-input") {
       this.shapeMapper.update(this.deltaTime);
