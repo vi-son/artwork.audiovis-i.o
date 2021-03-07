@@ -151,13 +151,13 @@ class AudioPlayer extends React.Component {
 
     return (
       <div className="audio-player">
-        <svg width={200} height={200}>
+        <svg width={140} height={140}>
           <g
             stroke="var(--color-curacao)"
             fill="none"
             strokeWidth="6"
             strokeLinecap="round"
-            transform="translate(50, 50)"
+            transform="translate(20, 20)"
           >
             <circle
               cx={cx + r}

@@ -1,6 +1,6 @@
 // node_modules imports
 import React, { useRef, useState, useEffect } from "react";
-import { Link, withRouter } from "react-router-dom";
+import { Link, withRouter, useHistory } from "react-router-dom";
 // Local imports
 import AudioPlayer from "../components/AudioPlayer.js";
 import SelectBox from "../components/SelectBox.js";
@@ -94,6 +94,13 @@ class Flow extends React.Component {
     this.moveToNextScenario = this.moveToNextScenario.bind(this);
   }
 
+  componentWillReceiveProps({ selection }) {
+    const newMapping = Object.assign({}, this.state.currentMapping, selection);
+    this.setState({
+      currentMapping: newMapping,
+    });
+  }
+
   prepareNextScenario() {
     if (this.state.completedCount === this.state.scenarioCount) {
       this.props.onFinish(this.state.mappings, this.props.history);
@@ -142,14 +149,27 @@ class Flow extends React.Component {
     const mappingDebug = (
       <div className="mapping-debug">
         <span>{this.state.completedCount}</span>
-        <br />
-        <span>{this.state.currentMapping.type}</span>
-        <span>{JSON.stringify(this.state.currentMapping.mapping)}</span>
-        <hr />
         <h5>Scenario count: {this.state.scenarioCount}</h5>
-        <span>
-          {this.state.currentMapping.sample} ({this.state.currentMapping.group})
-        </span>
+        <br />
+        <hr />
+        {this.state.currentMapping ? (
+          <div className="current-mapping">
+            <span>
+              <b>Type: </b>
+              {this.state.currentMapping.type}
+            </span>
+            <span>
+              <b>Sample: </b> {this.state.currentMapping.sample}
+            </span>
+            <span>
+              <b>Group: </b>
+              {this.state.currentMapping.group}
+            </span>
+            <span>{JSON.stringify(this.state.currentMapping.mapping)}</span>
+          </div>
+        ) : (
+          <></>
+        )}
         <hr />
         <ol>
           {this.state.unmappedGroups.map((umg, i) => {
@@ -202,6 +222,8 @@ class Flow extends React.Component {
             className="description step-3"
             onClick={() => {
               this.audioPlayerRef.current.stopAudio();
+              this.props.onClear();
+              this.props.history.push("/flow");
             }}
           >
             <span className="emoji">👉</span>
@@ -209,9 +231,38 @@ class Flow extends React.Component {
             <article>Zum nächsten Schritt</article>
           </div>
         </div>
+
         {/* ) : ( */}
         {/*   <></> */}
         {/* )} */}
+
+        <div className="mapping-selection">
+          <Link
+            to="/flow?state=color-input"
+            className="input-selection"
+            onClick={this.props.onClear}
+          >
+            <IconColor />
+            <span>Farbe</span>
+          </Link>
+          <Link
+            to="/flow?state=feeling-input"
+            className="input-selection"
+            onClick={this.props.onClear}
+          >
+            <IconFeeling />
+            <span>Gefühl</span>
+            <h4>{JSON.stringify(this.props.selection)}</h4>
+          </Link>
+          <Link
+            to="/flow?state=shape-input"
+            className="input-selection"
+            onClick={this.props.onClear}
+          >
+            <IconShape />
+            <span>Form</span>
+          </Link>
+        </div>
       </>
     );
 

@@ -26,6 +26,7 @@ function useQuery() {
 const Artwork = () => {
   const [showNarrative, setShowNarrative] = useState(false);
   const [content, setContent] = useState({});
+  const [flowSelection, setFlowSelection] = useState("");
 
   const exampleMapping = require("../json/08f406489239afeddc1391e4125cf37b.json");
   const mapping = undefined;
@@ -43,7 +44,7 @@ const Artwork = () => {
 
   return (
     <>
-      {query.get("state")}
+      <h1>{JSON.stringify(flowSelection)}</h1>
       <div className="artwork">
         {mapping !== undefined ? (
           <Totem
@@ -56,6 +57,7 @@ const Artwork = () => {
             mapping={exampleMapping}
             paused={showNarrative}
             state={query.get("state")}
+            onSelect={(s) => setFlowSelection(s)}
           />
         )}
       </div>
@@ -80,7 +82,11 @@ const Artwork = () => {
         <Switch>
           <Route path="/flow">
             <div className="ui">
-              <Flow />
+              <Flow
+                selection={flowSelection}
+                onFinish={() => console.log("Finished")}
+                onClear={() => setFlowSelection("")}
+              />
               <ButtonOpenNarrative
                 showNarrative={showNarrative}
                 setShowNarrative={setShowNarrative}

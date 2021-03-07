@@ -1,14 +1,14 @@
 // node_modules imports
 import * as THREE from "three";
-import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import TWEEN from "@tweenjs/tween.js";
 // GLSL imports
 import vertexShader from "../../glsl/colorcube.vert.glsl";
 import fragmentShader from "../../glsl/colorcube.frag.glsl";
 
 class ColorMapper {
-  constructor(renderer) {
+  constructor(renderer, onSelect) {
     this._scene = new THREE.Scene();
+    this._onSelect = onSelect;
 
     // Geometry
     const geometry = new THREE.BoxGeometry(1, 1, 1);
@@ -21,6 +21,8 @@ class ColorMapper {
       transparent: true,
     });
     this._colorCube = new THREE.Mesh(geometry, material);
+    this._colorCube.rotation.y = Math.PI / 4.0;
+    this._colorCube.rotation.x = Math.PI / 4.0;
     this._scene.add(this._colorCube);
     this._cubeTween = new TWEEN.Tween(
       this._colorCube.material.uniforms.uOpacity
@@ -69,10 +71,6 @@ class ColorMapper {
     return this._scene;
   }
 
-  get camera() {
-    return this._camera;
-  }
-
   get raycastables() {
     return [this._colorCube];
   }
@@ -86,6 +84,11 @@ class ColorMapper {
       );
       newPosition.setLength(1.1);
       this._sphere.position.copy(newPosition);
+      const red = this._raycastHit[0].point.x + 0.5;
+      const green = this._raycastHit[0].point.y + 0.5;
+      const blue = this._raycastHit[0].point.z + 0.5;
+      this._sphere.material.color.fromArray([red, green, blue]);
+      // Update the cursor line
       this._cursorLine.geometry.attributes.position.array[3] = newPosition.x;
       this._cursorLine.geometry.attributes.position.array[4] = newPosition.y;
       this._cursorLine.geometry.attributes.position.array[5] = newPosition.z;
@@ -112,7 +115,14 @@ class ColorMapper {
       this._raycastHit[0].point.y,
       this._raycastHit[0].point.z
     );
+    // Update the cursor
     this._cursor.position.copy(newPosition);
+    const red = Math.round((this._raycastHit[0].point.x + 1) * 128);
+    const green = Math.round((this._raycastHit[0].point.y + 1) * 128);
+    const blue = Math.round((this._raycastHit[0].point.z + 1) * 128);
+    this._cursor.material.color.fromArray([red, green, blue]);
+    this._onSelect({ type: "color", mapping: [red, green, blue] });
+    // Tween the camera
     const normal = this._raycastHit[0].point
       .clone()
       .sub(new THREE.Vector3(0, 0, 0))
@@ -145,8 +155,6 @@ class ColorMapper {
   fadeIn() {
     this._cubeTween.start();
   }
-
-  handleResize(aspect) {}
 
   handleRaycast(hit) {
     this._raycastHit = hit;

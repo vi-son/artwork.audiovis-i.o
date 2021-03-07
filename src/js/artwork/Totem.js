@@ -29,11 +29,12 @@ import backgroundVertexShader from "../../glsl/background.vert.glsl";
 import backgroundFragmentShader from "../../glsl/background.frag.glsl";
 
 class Totem extends THREE.Group {
-  constructor(canvas, mapping) {
+  constructor(canvas, mapping, selectionHandler) {
     super();
 
     this._state = null;
     this._canvas = canvas;
+    this._selectionHandler = selectionHandler;
 
     // Mappings
     this.mapping = mapping;
@@ -41,7 +42,6 @@ class Totem extends THREE.Group {
     this._setupMappings();
 
     // Scene elements
-    this.frameCount = 0;
     this.deltatime = 0;
     this.time = 0;
     this.clock = new THREE.Clock();
@@ -53,11 +53,19 @@ class Totem extends THREE.Group {
     this._setupRaycasting();
 
     this._mapper = new Mapper();
-    this.colorInput = new ColorMapper(this.renderer);
-    this.shapeMapper = new ShapeMapper();
-    this.feelingMapper = new FeelingMapper();
-
-    //this._loadSounds(); // @TODO
+    this.colorInput = new ColorMapper(this.renderer, (mapping) => {
+      const [r, g, b] = mapping.mapping;
+      this.backgroundMaterial.uniforms.uColor.value = new THREE.Color(
+        `rgb(${r}, ${g}, ${b})`
+      );
+      this._selectionHandler(mapping);
+    });
+    this.shapeMapper = new ShapeMapper((mapping) => {
+      this._selectionHandler(mapping);
+    });
+    this.feelingMapper = new FeelingMapper((mapping) => {
+      this._selectionHandler(mapping);
+    });
 
     // Mappings
     this._mapFeelings();
@@ -67,8 +75,6 @@ class Totem extends THREE.Group {
     // Stats
     this.stats = new Stats();
     document.body.appendChild(this.stats.dom);
-    // Gui
-    this.gui = new dat.GUI();
   }
 
   pause() {
@@ -85,11 +91,20 @@ class Totem extends THREE.Group {
 
   setState(state) {
     this._state = state;
-    if (this._state === "shape-input") {
-      this.shapeMapper.fadeIn();
-    }
-    if (this._state === "color-input") {
-      this.colorInput.fadeIn();
+    this._sounds.forEach((s) => s.pause());
+    switch (this._state) {
+      case "shape-input":
+        this.shapeMapper.fadeIn();
+        break;
+      case "feeling-input":
+        this.feelingMapper.fadeIn();
+        break;
+      case "color-input":
+        this.colorInput.fadeIn();
+        break;
+      case "totem":
+        this._loadSounds();
+        break;
     }
   }
 
@@ -113,6 +128,10 @@ class Totem extends THREE.Group {
       vertexShader: backgroundVertexShader,
       fragmentShader: backgroundFragmentShader,
       uniforms: {
+        uColor: {
+          // value: new THREE.Color(`rgb(105, 108, 112)`),
+          value: new THREE.Color(`rgb(144, 150, 154)`),
+        },
         uResolution: {
           value: new THREE.Vector2(
             this.size.width * window.devicePixelRatio,
@@ -287,31 +306,52 @@ class Totem extends THREE.Group {
       ((e.clientX - this.size.x) / this.size.width) * 2 - 1;
     this._mousePosition.y =
       -((e.clientY - this.size.y) / this.size.height) * 2 + 1;
-    if (this._state === "color-input") {
-      this.colorInput.handlePointerMove(e, { size: this.size });
+    switch (this._state) {
+      case "shape-input":
+        this.shapeMapper.handlePointerMove(e, { size: this.size });
+        break;
+      case "color-input":
+        this.colorInput.handlePointerMove(e, { size: this.size });
+        break;
+      case "feeling-input":
+        this.feelingMapper.handlePointerMove(e, { size: this.size });
+        break;
     }
   }
 
   handlePointerDown(e) {
     this._mapper.handlePointerDown(e);
-    if (this._state === "shape-input") {
-      this.shapeMapper.handlePointerDown(e);
-    }
-    if (this._state === "color-input") {
-      this.colorInput.handlePointerDown(e);
+    switch (this._state) {
+      case "shape-input":
+        this.shapeMapper.handlePointerDown(e);
+        break;
+      case "color-input":
+        this.colorInput.handlePointerDown(e);
+        break;
+      case "feeling-input":
+        this.feelingMapper.handlePointerDown(e);
+        break;
     }
   }
 
   handlePointerUp(e) {
     this._mapper.handlePointerUp(e);
-    if (this._state === "shape-input") {
-      this.shapeMapper.handlePointerUp(e);
-    }
-    if (this._state === "color-input") {
-      this.colorInput.handlePointerUp(e, {
-        camera: this.camera,
-        controls: this.controls,
-      });
+    switch (this._state) {
+      case "shape-input":
+        this.shapeMapper.handlePointerUp(e);
+        break;
+      case "color-input":
+        this.colorInput.handlePointerUp(e, {
+          camera: this.camera,
+          controls: this.controls,
+        });
+        break;
+      case "feeling-input":
+        this.feelingMapper.handlePointerUp(e, {
+          camera: this.camera,
+          controls: this.controls,
+        });
+        break;
     }
   }
 
@@ -564,6 +604,12 @@ class Totem extends THREE.Group {
       );
       this.colorInput.handleRaycast(this._hit, this.camera.position);
     }
+    if (this._state === "feeling-input") {
+      this._hit = this._raycaster.intersectObjects(
+        this.feelingMapper.raycastables
+      );
+      this.feelingMapper.handleRaycast(this._hit, this.camera.position);
+    }
   }
 
   _renderLoop() {
@@ -574,12 +620,8 @@ class Totem extends THREE.Group {
     this.renderer.clear();
     this.renderer.render(this.backgroundPlane, this.backgroundCamera);
 
-    if (this._state === "totem") {
-      this.renderer.render(this.scene, this.camera);
-    }
-    // if (this._state !== "totem") {
-    //   this.renderer.render(this._mapper.scene, this.camera);
-    // }
+    this._raycastLoop();
+
     if (this._state === "color-input") {
       this.colorInput.update(this.deltaTime, {
         cameraPosition: this.camera.position,
@@ -591,10 +633,13 @@ class Totem extends THREE.Group {
       this.renderer.render(this.shapeMapper.scene, this.camera);
     }
     if (this._state === "feeling-input") {
+      this.feelingMapper.update(this.deltaTime);
       this.renderer.render(this.feelingMapper.scene, this.camera);
     }
 
-    this._raycastLoop();
+    if (this._state === "totem") {
+      this.renderer.render(this.scene, this.camera);
+    }
 
     // Analyzers
     /*
@@ -642,7 +687,6 @@ class Totem extends THREE.Group {
       });
       */
     this.tubeMesh.material.uniforms.uTime.value = this.time;
-    // frameCount++;
 
     if (this.stats) {
       this.stats.update();
@@ -650,7 +694,7 @@ class Totem extends THREE.Group {
   }
 }
 
-export default ({ mapping, onResize, paused, state }) => {
+export default ({ mapping, onResize, paused, state, onSelect }) => {
   const canvasRef = useRef();
   const canvasWrapperRef = useRef();
   const [sounds, setSounds] = useState([]);
@@ -688,7 +732,7 @@ export default ({ mapping, onResize, paused, state }) => {
 
   useEffect(() => {
     if (canvasRef.current) {
-      const totem = new Totem(canvasRef.current, mapping);
+      const totem = new Totem(canvasRef.current, mapping, onSelect);
       const resizeHandler = window.addEventListener(
         "resize",
         totem.handleResize.bind(totem),
@@ -713,14 +757,7 @@ export default ({ mapping, onResize, paused, state }) => {
     }
 
     return () => {
-      // threeSounds.forEach((s) => {
-      //   s.stop();
-      // });
-      // while (scene.children.length > 0) {
-      //   scene.remove(scene.children[0]);
-      // }
-      // renderer.dispose();
-      // window.removeEventListener("resize", resizeHandler);
+      // @TODO dispose totem
     };
   }, []);
 
@@ -753,6 +790,7 @@ export default ({ mapping, onResize, paused, state }) => {
       <div className="canvas-wrapper" ref={canvasWrapperRef}>
         <canvas ref={canvasRef}></canvas>
       </div>
+
       {/* <ButtonDownloadRendering */}
       {/*   prepareDownload={prepareDownload} */}
       {/*   canvasRef={canvasRef.current} */}

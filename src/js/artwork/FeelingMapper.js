@@ -1,9 +1,15 @@
 import * as THREE from "three";
+import TWEEN from "@tweenjs/tween.js";
 
 class FeelingMapper {
-  constructor() {
+  constructor(onSelect) {
     this._scene = new THREE.Scene();
     this._root = new THREE.Object3D();
+
+    this._highlightColor = new THREE.Color(0x2b13ff);
+    this._defaultColor = new THREE.Color(0x7a7a7a);
+
+    this._onSelect = onSelect;
 
     // Light
     var light = new THREE.HemisphereLight(0xffffff, 0x666666, 2.0);
@@ -21,6 +27,10 @@ class FeelingMapper {
       ["angewidert", "ablehnend", "gelangweilt"],
       ["wütend", "verärgert", "gereizt"],
     ];
+    this._selectedId = -1;
+
+    // Raycasting
+    this._raycastHit = [];
 
     this._create();
   }
@@ -30,6 +40,8 @@ class FeelingMapper {
       color: 0x7a7a7a,
       side: THREE.DoubleSide,
       flatShading: true,
+      transparent: true,
+      opacity: 0,
     });
 
     this._feelings.map((row, i) => {
@@ -95,11 +107,107 @@ class FeelingMapper {
         prevZ1 = w1;
       });
     });
+    this._root.position.y = 0.15;
     this._scene.add(this._root);
+    let from = { opacity: 0 };
+    this._rootTween = new TWEEN.Tween(from)
+      .to({ opacity: 1 }, 800)
+      .onUpdate(() => {
+        this._root.children.forEach((c) => {
+          c.material.opacity = from.opacity;
+        });
+      });
   }
 
   get scene() {
     return this._scene;
+  }
+
+  get raycastables() {
+    return this._root.children;
+  }
+
+  fadeIn() {
+    this._rootTween.start();
+  }
+
+  update(deltaTime) {
+    this._root.children.forEach((obj) => {
+      new TWEEN.Tween(obj.material.color)
+        .to(
+          {
+            r: this._defaultColor.r,
+            g: this._defaultColor.g,
+            b: this._defaultColor.b,
+          },
+          300
+        )
+        .start();
+    });
+    if (this._raycastHit.length > 0) {
+      const { object } = this._raycastHit[0];
+      new TWEEN.Tween(object.material.color)
+        .to(
+          {
+            r: this._highlightColor.r,
+            g: this._highlightColor.g,
+            b: this._highlightColor.b,
+          },
+          300
+        )
+        .start();
+    }
+  }
+
+  handlePointerMove(e) {}
+
+  handlePointerDown(e) {
+    this._clientX = e.clientX;
+    this._clientY = e.clientY;
+  }
+
+  handlePointerUp(e, { camera, controls }) {
+    var x = e.clientX;
+    var y = e.clientY;
+    // If the mouse moved since the mousedown then
+    // don't consider this a selection
+    if (x != this._clientX || y != this._clientY) return;
+    if (this._raycastHit.length > 0) {
+      const normal = this._raycastHit[0].point
+        .clone()
+        .sub(new THREE.Vector3(0, 0, 0))
+        .normalize()
+        .setLength(4.0);
+      const from = {
+        x: camera.position.x,
+        y: camera.position.y,
+        z: camera.position.z,
+      };
+      const to = {
+        x: normal.x,
+        y: normal.y,
+        z: normal.z,
+      };
+      const cameraTween = new TWEEN.Tween(from).to(to, 800);
+      cameraTween
+        .onUpdate(function () {
+          camera.position.set(from.x, from.y, from.z);
+          controls.update();
+        })
+        .easing(TWEEN.Easing.Quadratic.InOut);
+      cameraTween.start();
+      controls.update();
+      const { id } = this._raycastHit[0].object;
+      this._selectedId = id;
+      this._onSelect({
+        type: "feeling",
+        mapping: this._feelingMap.get(this._selectedId),
+      });
+    }
+  }
+
+  handleRaycast(hit) {
+    this._raycastHit = hit;
   }
 }
 

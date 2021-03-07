@@ -1,10 +1,14 @@
 .flow
   display: grid
+  height: 100vh
+  width: 100vw
+  pointer-events: none
 
   .description
     display: grid
     grid-template-columns: 60px auto
     grid-template-rows: auto auto
+    pointer-events: all
     .title
       margin: 0
     .emoji
@@ -31,17 +35,19 @@
 
 
   .mapping-debug
-    display: none
     position: fixed
     left: 0
-    bottom: 0
+    top: 0
     z-index: 999
     background: black
-    max-width: 50ch
+    max-width: 90ch
     color: white
     font-size: 0.9rem
     padding: 20px
     word-wrap: break-word
+    .current-mapping
+      display: flex
+      flex-direction: column
     hr
       opacity: 0.2
       margin: 40px 0
@@ -51,3 +57,21 @@
       display: flex
       flex-direction: column
       margin-bottom: 20px
+
+  .mapping-selection
+    display: flex
+    align-self: center
+    justify-self: center
+    justify-content: space-around
+    width: 100%
+    max-width: 60ch
+    .input-selection
+      color: var(--color-darkness)
+      pointer-events: all
+      width: 120px
+      display: flex
+      flex-direction: column
+      justify-content: center
+      align-items: center
+      svg
+        transform: scale(1.1)

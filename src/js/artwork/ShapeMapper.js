@@ -2,7 +2,7 @@ import * as THREE from "three";
 import TWEEN from "@tweenjs/tween.js";
 
 class ShapeMapper {
-  constructor() {
+  constructor(onSelect) {
     this._scene = new THREE.Scene();
 
     this._defaultColor = new THREE.Color(0x7a7a7a);
@@ -11,6 +11,8 @@ class ShapeMapper {
 
     this._selectedShape = null;
     this._mouseDown = false;
+
+    this._onSelect = onSelect;
 
     // Light
     var light = new THREE.HemisphereLight(0xffffff, 0x666666, 2.0);
@@ -122,18 +124,19 @@ class ShapeMapper {
       new TWEEN.Tween(object.material.color).to(toColor, 100).start();
       if (this._mouseDown) {
         this._selectedShape = object;
-        console.log(this._selectedShape.name);
+        this._onSelect({ type: "shape", mapping: this._selectedShape.name });
       }
     } else {
       this._group.children.forEach((object) => {
-        if (this._selectedShape && this._selectedShape.name !== object.name) {
-          const toColor = {
-            r: this._defaultColor.r,
-            g: this._defaultColor.g,
-            b: this._defaultColor.b,
-          };
-          new TWEEN.Tween(object.material.color).to(toColor, 300).start();
+        if (this._selectedShape && this._selectedShape.name === object.name) {
+          return;
         }
+        const toColor = {
+          r: this._defaultColor.r,
+          g: this._defaultColor.g,
+          b: this._defaultColor.b,
+        };
+        new TWEEN.Tween(object.material.color).to(toColor, 300).start();
       });
       if (this._selectedShape) {
         const toColor = {
@@ -155,6 +158,8 @@ class ShapeMapper {
   handlePointerUp() {
     this._mouseDown = false;
   }
+
+  handlePointerMove() {}
 
   update(deltaTime) {
     // Cube
