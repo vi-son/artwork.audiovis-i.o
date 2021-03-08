@@ -63,22 +63,6 @@ const Artwork = () => {
       </div>
 
       <div>
-        <nav className="nav">
-          <ul>
-            <li>
-              <Link to="/">start</Link>
-            </li>
-            <li>
-              <Link to="/flow?state=color-input">flow/color</Link>
-              <Link to="/flow?state=shape-input">flow/shape</Link>
-              <Link to="/flow?state=feeling-input">flow/feeling</Link>
-            </li>
-            <li>
-              <Link to="/end?state=totem">end</Link>
-            </li>
-          </ul>
-        </nav>
-
         <Switch>
           <Route path="/flow">
             <div className="ui">
@@ -104,12 +88,11 @@ const Artwork = () => {
           <Route path="/">
             <div className="ui">
               <Intro />
+              <ButtonToExhibition />
             </div>
           </Route>
         </Switch>
       </div>
-
-      <ButtonToExhibition />
 
       <ButtonCloseNarrative
         showNarrative={showNarrative}

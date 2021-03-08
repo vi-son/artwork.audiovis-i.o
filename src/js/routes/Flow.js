@@ -1,6 +1,8 @@
 // node_modules imports
 import React, { useRef, useState, useEffect } from "react";
 import { Link, withRouter, useHistory } from "react-router-dom";
+import { utils } from "@vi.son/components";
+const { mobileCheck } = utils;
 // Local imports
 import AudioPlayer from "../components/AudioPlayer.js";
 import SelectBox from "../components/SelectBox.js";
@@ -25,6 +27,8 @@ class Flow extends React.Component {
   constructor(props) {
     super(props);
     this.fadeDuration = 100;
+
+    this._isMobile = mobileCheck();
 
     this.audioPlayerRef = React.createRef();
     this.selectBoxRef = React.createRef();
@@ -72,6 +76,7 @@ class Flow extends React.Component {
     this.groups = ["synthesizer", "guitar", "chords", "bass", "rhythm"];
 
     this.state = {
+      showDebug: false,
       selectedIdx: -1,
       initialized: false,
       groups: this.groups,
@@ -147,55 +152,67 @@ class Flow extends React.Component {
       return <></>;
     }
     const mappingDebug = (
-      <div className="mapping-debug">
-        <span>{this.state.completedCount}</span>
-        <h5>Scenario count: {this.state.scenarioCount}</h5>
-        <br />
-        <hr />
-        {this.state.currentMapping ? (
-          <div className="current-mapping">
-            <span>
-              <b>Type: </b>
-              {this.state.currentMapping.type}
-            </span>
-            <span>
-              <b>Sample: </b> {this.state.currentMapping.sample}
-            </span>
-            <span>
-              <b>Group: </b>
-              {this.state.currentMapping.group}
-            </span>
-            <span>{JSON.stringify(this.state.currentMapping.mapping)}</span>
+      <>
+        <button
+          className="toggle-debug"
+          onClick={() => this.setState({ showDebug: !this.state.showDebug })}
+        >
+          debug
+        </button>
+        {this.state.showDebug ? (
+          <div className="mapping-debug">
+            <span>{this.state.completedCount}</span>
+            <h5>Scenario count: {this.state.scenarioCount}</h5>
+            <br />
+            <hr />
+            {this.state.currentMapping ? (
+              <div className="current-mapping">
+                <span>
+                  <b>Type: </b>
+                  {this.state.currentMapping.type}
+                </span>
+                <span>
+                  <b>Sample: </b> {this.state.currentMapping.sample}
+                </span>
+                <span>
+                  <b>Group: </b>
+                  {this.state.currentMapping.group}
+                </span>
+                <span>{JSON.stringify(this.state.currentMapping.mapping)}</span>
+              </div>
+            ) : (
+              <></>
+            )}
+            <hr />
+            <ol>
+              {this.state.unmappedGroups.map((umg, i) => {
+                return <li key={i}>{umg}</li>;
+              })}
+            </ol>
+            <hr />
+            {this.state.mappings.map((m, i) => {
+              return (
+                <small className="mapping" key={i}>
+                  <span>
+                    <b>sample: </b>
+                    {m.sample} ({m.group})
+                  </span>
+                  <span>
+                    <b>type: </b>
+                    {m.type}
+                  </span>
+                  <span>
+                    <b>mapping: </b>
+                    {JSON.stringify(m.mapping)}
+                  </span>
+                </small>
+              );
+            })}
           </div>
         ) : (
           <></>
-        )}
-        <hr />
-        <ol>
-          {this.state.unmappedGroups.map((umg, i) => {
-            return <li key={i}>{umg}</li>;
-          })}
-        </ol>
-        <hr />
-        {this.state.mappings.map((m, i) => {
-          return (
-            <small className="mapping" key={i}>
-              <span>
-                <b>sample: </b>
-                {m.sample} ({m.group})
-              </span>
-              <span>
-                <b>type: </b>
-                {m.type}
-              </span>
-              <span>
-                <b>mapping: </b>
-                {JSON.stringify(m.mapping)}
-              </span>
-            </small>
-          );
-        })}
-      </div>
+        )}{" "}
+      </>
     );
 
     const workflowLayout = (
@@ -215,54 +232,77 @@ class Flow extends React.Component {
           }}
         />
 
-        {/* {this.state.currentMapping.type !== undefined && */}
-        {/* this.state.currentMapping.mapping !== undefined ? ( */}
-        <div className="button-wrapper">
-          <div
-            className="description step-3"
-            onClick={() => {
-              this.audioPlayerRef.current.stopAudio();
-              this.props.onClear();
-              this.props.history.push("/flow");
-            }}
-          >
-            <span className="emoji">👉</span>
-            <h3 className="title">3. Weiter</h3>
-            <article>Zum nächsten Schritt</article>
+        {this.state.currentMapping.type !== undefined &&
+        this.state.currentMapping.mapping !== undefined ? (
+          <div className="button-wrapper">
+            <div className="description step-3">
+              <button
+                className="btn-next emoji"
+                onClick={() => {
+                  this.setState({
+                    currentMapping: { type: undefined, mapping: undefined },
+                  });
+                }}
+              >
+                🙅🏼‍♀️
+              </button>
+              <div className="text">
+                <h3 className="title">3. Weiter</h3>
+                <article>Zum nächsten Schritt</article>
+              </div>
+              <button
+                className="btn-next emoji"
+                onClick={() => {
+                  this.audioPlayerRef.current.stopAudio();
+                  this.props.onClear();
+                  this.props.history.push("/flow");
+                }}
+              >
+                👉
+              </button>
+            </div>
           </div>
-        </div>
+        ) : (
+          <></>
+        )}
 
-        {/* ) : ( */}
-        {/*   <></> */}
-        {/* )} */}
+        {this.state.currentMapping.type === undefined &&
+        this.state.currentMapping.mapping === undefined ? (
+          <div className="mapping-selection">
+            <Link
+              to="/flow?state=color-input"
+              className="input-selection"
+              onClick={this.props.onClear}
+            >
+              <IconColor />
+              <span>Farbe</span>
+            </Link>
+            <Link
+              to="/flow?state=feeling-input"
+              className="input-selection"
+              onClick={this.props.onClear}
+            >
+              <IconFeeling />
+              <span>Gefühl</span>
+            </Link>
+            <Link
+              to="/flow?state=shape-input"
+              className="input-selection"
+              onClick={this.props.onClear}
+            >
+              <IconShape />
+              <span>Form</span>
+            </Link>
 
-        <div className="mapping-selection">
-          <Link
-            to="/flow?state=color-input"
-            className="input-selection"
-            onClick={this.props.onClear}
-          >
-            <IconColor />
-            <span>Farbe</span>
-          </Link>
-          <Link
-            to="/flow?state=feeling-input"
-            className="input-selection"
-            onClick={this.props.onClear}
-          >
-            <IconFeeling />
-            <span>Gefühl</span>
-            <h4>{JSON.stringify(this.props.selection)}</h4>
-          </Link>
-          <Link
-            to="/flow?state=shape-input"
-            className="input-selection"
-            onClick={this.props.onClear}
-          >
-            <IconShape />
-            <span>Form</span>
-          </Link>
-        </div>
+            {this.state.showDebug ? (
+              <h4 className="debug">{JSON.stringify(this.props.selection)}</h4>
+            ) : (
+              <></>
+            )}
+          </div>
+        ) : (
+          <></>
+        )}
       </>
     );
 

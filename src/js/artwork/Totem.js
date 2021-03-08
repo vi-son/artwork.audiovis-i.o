@@ -9,15 +9,15 @@ import md5 from "blueimp-md5";
 import Stats from "three/examples/jsm/libs/stats.module.js";
 import * as dat from "dat.gui";
 import { ButtonDownloadRendering } from "@vi.son/components";
+import { utils } from "@vi.son/components";
+const { mobileCheck } = utils;
 // Local imports
 import createLineGeometry from "../utils/createLineGeometry.js";
 import { remap, randomIndex } from "../utils/math.js";
-
 import Mapper from "./Mapper.js";
 import ColorMapper from "./ColorMapper.js";
 import ShapeMapper from "./ShapeMapper.js";
 import FeelingMapper from "./FeelingMapper.js";
-
 // Style imports
 import "../../sass/components/Totem.sass";
 // SVG imports
@@ -31,6 +31,8 @@ import backgroundFragmentShader from "../../glsl/background.frag.glsl";
 class Totem extends THREE.Group {
   constructor(canvas, mapping, selectionHandler) {
     super();
+
+    this._isMobile = mobileCheck();
 
     this._state = null;
     this._canvas = canvas;
@@ -94,15 +96,19 @@ class Totem extends THREE.Group {
     this._sounds.forEach((s) => s.pause());
     switch (this._state) {
       case "shape-input":
+        this.controls.reset();
         this.shapeMapper.fadeIn();
         break;
       case "feeling-input":
+        this.controls.reset();
         this.feelingMapper.fadeIn();
         break;
       case "color-input":
+        this.controls.reset();
         this.colorInput.fadeIn();
         break;
       case "totem":
+        this.controls.reset();
         this._loadSounds();
         break;
     }
@@ -281,13 +287,14 @@ class Totem extends THREE.Group {
       0.01,
       1000
     );
-    this.controls = new OrbitControls(this.camera, this.renderer.domElement);
     this.camera.position.set(0, 0.0, 4.0);
+    this.controls = new OrbitControls(this.camera, this.renderer.domElement);
     this.controls.update();
     this.controls.enableZoom = true;
     this.controls.enablePan = false;
     this.controls.enableDamping = false;
     this.controls.dampingFactor = 0.1;
+    this.controls.saveState();
 
     // Audio listener
     this.analysers = [];

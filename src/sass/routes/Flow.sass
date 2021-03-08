@@ -1,13 +1,21 @@
+@import @vi.son/rouge/1-settings/_colors.sass
+@import @vi.son/rouge/1-settings/_typograhpy.sass
+@import @vi.son/rouge/1-settings/_breakpoints.sass
+@import @vi.son/rouge/2-tools/_media-queries.sass
+
 .flow
   display: grid
   height: 100vh
   width: 100vw
   pointer-events: none
+  grid-template-rows: 1fr 120px
+
+  .button-wrapper
+    display: flex
+    justify-content: center
+    align-items: center
 
   .description
-    display: grid
-    grid-template-columns: 60px auto
-    grid-template-rows: auto auto
     pointer-events: all
     .title
       margin: 0
@@ -19,52 +27,92 @@
       position: fixed
       top: 60px
       left: 60px
+      display: grid
+      grid-template-columns: 80px auto
+      grid-template-rows: auto auto
     &.step-3
-      position: fixed
-      right: 60px
-      top: 50%
-
-  .next-sample
-    position: fixed
-    top: 60%
-    right: 60px
-
+      cursor: pointer
+      align-self: center
+      display: flex
+      display: grid
+      grid-template-columns: 100px auto 100px
+      grid-template-rows: auto auto
+      grid-gap: 60px
+      .text
+        align-self: center
+        justify-self: center
+        grid-row: span 2
+      .btn-next
+        margin: 0
+        width: 100px
+        height: 100px
+        border-radius: 100px
+        display: flex
+        justify-content: center
+        align-items: center
+        +until($tablets)
+          width: 50px
+          height: 50px
+          font-size: 2rem
 
   .audio-player
     margin-top: 100px
 
+  .toggle-debug
+    position: fixed
+    top: 20px
+    left: 0
+    background: var(--color-ultradark)
+    color: var(--color-snow)
+    padding: 5px
+    z-index: 99999
+    pointer-events: all
+    font-size: 0.8em
+    font-family: Monospace
 
   .mapping-debug
+    font-family: Monospace
     position: fixed
     left: 0
-    top: 0
+    top: 80px
     z-index: 999
-    background: black
+    background: var(--color-ultradark)
     max-width: 90ch
-    color: white
+    color: var(--color-snow)
     font-size: 0.9rem
-    padding: 20px
+    padding: 5px
     word-wrap: break-word
+    font-size: 0.8em
     .current-mapping
       display: flex
       flex-direction: column
     hr
       opacity: 0.2
-      margin: 40px 0
+      margin: 2px 0
     *
-      color: white
+      color: var(--color-snow)
     .mapping
       display: flex
       flex-direction: column
-      margin-bottom: 20px
+      margin-bottom: 2px
 
   .mapping-selection
-    display: flex
+    display: grid
+    grid-template-columns: 1fr 1fr 1fr
     align-self: center
     justify-self: center
     justify-content: space-around
-    width: 100%
+    grid-gap: 10px
+    position: fixed
+    bottom: 40px
     max-width: 60ch
+    +from($tablets)
+      bottom: 40px
+      grid-gap: 40px
+      max-width: 60ch
+    +from($desktops)
+      grid-gap: 60px
+      bottom: 60px
     .input-selection
       color: var(--color-darkness)
       pointer-events: all
@@ -75,3 +123,13 @@
       align-items: center
       svg
         transform: scale(1.1)
+
+    .debug
+      position: fixed
+      bottom: 0
+      text-align: center
+      font-family: $font-text
+      font-size: 0.9rem
+      grid-column: span 3
+      background: var(--color-ultradark)
+      color: var(--color-snow)
