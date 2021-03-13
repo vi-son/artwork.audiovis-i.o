@@ -1,5 +1,7 @@
 @import @vi.son/rouge/1-settings/_colors.sass
 @import @vi.son/rouge/1-settings/_typograhpy.sass
+@import @vi.son/rouge/1-settings/_breakpoints.sass
+@import @vi.son/rouge/2-tools/_media-queries.sass
 
 $bar-height: 10px
 
@@ -12,6 +14,8 @@ $bar-height: 10px
   color: var(--color-darkness)
 
   .bar
+    +until($tablets)
+      height: $bar-height / 2
     height: $bar-height
     width: 100vw
     background: var(--color-ultradark-30)
@@ -26,9 +30,11 @@ $bar-height: 10px
   .completed-text-wrapper
     width: calc(100vw - 2 * 40px)
     margin: 0 auto
-    margin-top: 20px
     display: flex
     justify-content: center
+    margin-top: 8px
+    +from($tablets)
+      margin-top: 20px
 
   .completed-text
     font-weight: 300
@@ -44,7 +50,9 @@ $bar-height: 10px
       font-weight: bold
       font-size: 0.85rem
       text-transform: uppercase
-      margin-bottom: 15px
+      margin-bottom: 7px
+      +from($tablets)
+        margin-bottom: 15px
 
     .divider
       color: var(--color-curacao)

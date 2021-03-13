@@ -220,7 +220,7 @@ class Flow extends React.Component {
         <div className="description step-1">
           <span className="emoji">🔊</span>
           <h3 className="title">1. Audio</h3>
-          <article>Spiel das Audiosample ab</article>
+          <span className="subtitle">Spiel das Sample ab</span>
         </div>
 
         <AudioPlayer
@@ -244,11 +244,15 @@ class Flow extends React.Component {
                   });
                 }}
               >
-                🙅🏼‍♀️
+                🔧
               </button>
-              <div className="text">
-                <h3 className="title">3. Weiter</h3>
-                <article>Zum nächsten Schritt</article>
+              <div className="text back">
+                <h3 className="title">Zurück</h3>
+                <span>Mapping ändern</span>
+              </div>
+              <div className="text next">
+                <h3 className="title">Weiter</h3>
+                <span>nächster Schritt</span>
               </div>
               <button
                 className="btn-next emoji"

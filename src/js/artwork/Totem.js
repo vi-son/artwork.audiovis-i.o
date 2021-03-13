@@ -2,13 +2,13 @@
 import React, { useState, useRef, useEffect } from "react";
 import * as THREE from "three";
 import TWEEN from "@tweenjs/tween.js";
+import md5 from "blueimp-md5";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { PositionalAudioHelper } from "three/examples/jsm/helpers/PositionalAudioHelper.js";
 import { EXRLoader } from "three/examples/jsm/loaders/EXRLoader.js";
-import md5 from "blueimp-md5";
+import { GLTFExporter } from "three/examples/jsm/exporters/GLTFExporter.js";
 import Stats from "three/examples/jsm/libs/stats.module.js";
 import * as dat from "dat.gui";
-import { ButtonDownloadRendering } from "@vi.son/components";
 import { utils } from "@vi.son/components";
 const { mobileCheck } = utils;
 // Local imports
@@ -29,7 +29,7 @@ import backgroundVertexShader from "../../glsl/background.vert.glsl";
 import backgroundFragmentShader from "../../glsl/background.frag.glsl";
 
 class Totem extends THREE.Group {
-  constructor(canvas, mapping, selectionHandler) {
+  constructor(canvas, selectionHandler) {
     super();
 
     this._isMobile = mobileCheck();
@@ -38,10 +38,11 @@ class Totem extends THREE.Group {
     this._canvas = canvas;
     this._selectionHandler = selectionHandler;
 
+    this._exporter = new GLTFExporter();
+
     // Mappings
-    this.mapping = mapping;
+    this.mapping = null;
     this._sounds = [];
-    this._setupMappings();
 
     // Scene elements
     this.deltatime = 0;
@@ -51,7 +52,6 @@ class Totem extends THREE.Group {
 
     this._setupScene(canvas);
     this._setupBackground();
-    this._setupTube();
     this._setupRaycasting();
 
     this._mapper = new Mapper();
@@ -68,11 +68,6 @@ class Totem extends THREE.Group {
     this.feelingMapper = new FeelingMapper((mapping) => {
       this._selectionHandler(mapping);
     });
-
-    // Mappings
-    this._mapFeelings();
-    this._mapShapes();
-    this._mapColors();
 
     // Stats
     this.stats = new Stats();
@@ -91,6 +86,38 @@ class Totem extends THREE.Group {
     this._sounds.map((s) => s.play());
   }
 
+  get sounds() {
+    return this._sounds;
+  }
+
+  _resetBackground() {
+    this.backgroundMaterial.uniforms.uColor.value = new THREE.Color(
+      `rgb(144, 150, 154)`
+    );
+  }
+
+  dispose() {
+    while (this.totem.children.length > 0) {
+      this.totem.remove(this.totem.children.slice(-1).pop());
+    }
+    this._sounds.map((s) => {
+      s.pause();
+    });
+    this._sounds.splice(0, this._sounds.length);
+    this.analysers.splice(0, this.analysers.length);
+  }
+
+  setMapping(mapping, cb) {
+    this.mapping = mapping;
+    // Mappings
+    this._setupMappings();
+    this._setupTube();
+    this._mapFeelings();
+    this._mapShapes();
+    this._mapColors();
+    this._loadSounds().then(cb);
+  }
+
   setState(state) {
     this._state = state;
     this._sounds.forEach((s) => s.pause());
@@ -98,10 +125,12 @@ class Totem extends THREE.Group {
       case "shape-input":
         this.controls.reset();
         this.shapeMapper.fadeIn();
+        this._resetBackground();
         break;
       case "feeling-input":
         this.controls.reset();
         this.feelingMapper.fadeIn();
+        this._resetBackground();
         break;
       case "color-input":
         this.controls.reset();
@@ -109,7 +138,7 @@ class Totem extends THREE.Group {
         break;
       case "totem":
         this.controls.reset();
-        this._loadSounds();
+        this._resetBackground();
         break;
     }
   }
@@ -135,7 +164,6 @@ class Totem extends THREE.Group {
       fragmentShader: backgroundFragmentShader,
       uniforms: {
         uColor: {
-          // value: new THREE.Color(`rgb(105, 108, 112)`),
           value: new THREE.Color(`rgb(144, 150, 154)`),
         },
         uResolution: {
@@ -157,7 +185,7 @@ class Totem extends THREE.Group {
 
   _setupMappings() {
     this.colorMappings = this.mapping
-      .filter((m) => m.type === "Farbe")
+      .filter((m) => m.type === "color")
       .map((m, i) => {
         return {
           index: i,
@@ -166,8 +194,17 @@ class Totem extends THREE.Group {
         };
       });
 
+    this.colors = this.colorMappings.map(
+      (cm) =>
+        new THREE.Vector3(
+          cm.color[0] / 255.0,
+          cm.color[1] / 255.0,
+          cm.color[2] / 255.0
+        )
+    );
+
     this.shapeMappings = this.mapping
-      .filter((m) => m.type === "Form")
+      .filter((m) => m.type === "shape")
       .map((m, i) => {
         return {
           index: i,
@@ -176,7 +213,7 @@ class Totem extends THREE.Group {
       });
 
     this.feelingMappings = this.mapping
-      .filter((m) => m.type === "Gefühl")
+      .filter((m) => m.type === "feeling")
       .map((m, i) => {
         return {
           index: i,
@@ -193,14 +230,6 @@ class Totem extends THREE.Group {
   }
 
   _setupTube() {
-    this.colors = this.colorMappings.map(
-      (cm) =>
-        new THREE.Vector3(
-          cm.color[0] / 255.0,
-          cm.color[1] / 255.0,
-          cm.color[2] / 255.0
-        )
-    );
     const colorToUniformsArray = new Array(this.mapping.length)
       .fill(0)
       .map((_, i) => {
@@ -272,8 +301,8 @@ class Totem extends THREE.Group {
       canvas: canvas,
       antialias: 1,
       alpha: true,
-      // preserveDrawingBuffer: true,
-      // toneMapping: THREE.ACESFilmicToneMapping,
+      preserveDrawingBuffer: true,
+      toneMapping: THREE.ACESFilmicToneMapping,
     });
     this.renderer.setSize(this.size.width, this.size.height);
     this.renderer.setPixelRatio(window.devicePixelRatio);
@@ -290,6 +319,7 @@ class Totem extends THREE.Group {
     this.camera.position.set(0, 0.0, 4.0);
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
     this.controls.update();
+    this.controls.target.set(0, this._isMobile ? 0.125 : 0, 0);
     this.controls.enableZoom = true;
     this.controls.enablePan = false;
     this.controls.enableDamping = false;
@@ -339,6 +369,20 @@ class Totem extends THREE.Group {
         this.feelingMapper.handlePointerDown(e);
         break;
     }
+  }
+
+  export() {
+    this._exporter.parse(this.scene, (gltf) => {
+      console.log(gltf);
+      const downloadLink = document.createElement("a");
+      const dataStr =
+        "data:text/json;charset=utf-8," +
+        encodeURIComponent(JSON.stringify(gltf));
+      downloadLink.href = dataStr;
+      downloadLink.download = `${md5(JSON.stringify(this.mapping))}.gltf`;
+      document.body.append(downloadLink);
+      downloadLink.click();
+    });
   }
 
   handlePointerUp(e) {
@@ -391,22 +435,26 @@ class Totem extends THREE.Group {
     // Show audio sources
     const audioVisualizerCubes = [];
     let allLoaded = false;
-    this.mapping.map((c, i) => {
-      const sampleFilepath = `${this.samplesFolder}${c.sample}`;
-      const positionalAudio = new THREE.PositionalAudio(this.listener);
-      const analyser = new THREE.AudioAnalyser(positionalAudio, 32);
-      this.audioLoader.load(sampleFilepath, (buffer) => {
-        positionalAudio.setBuffer(buffer);
-        positionalAudio.setLoop(true);
-        positionalAudio.setVolume(0.7);
-        positionalAudio.play();
-        this._sounds.push(positionalAudio);
+    return new Promise((resolve, reject) => {
+      this.mapping.map((c, i) => {
+        const sampleFilepath = `${this.samplesFolder}${c.sample}`;
+        const positionalAudio = new THREE.PositionalAudio(this.listener);
+        const analyser = new THREE.AudioAnalyser(positionalAudio, 32);
         analyser.smoothingTimeConstant = 0.9;
-        this.analysers.push(analyser);
-        if (i === this.mapping.length - 1) {
-          allLoaded = true;
-          console.log("all loaded");
-        }
+        this.audioLoader.load(sampleFilepath, (buffer) => {
+          positionalAudio.setBuffer(buffer);
+          positionalAudio.setLoop(true);
+          positionalAudio.setVolume(0.7);
+          this._sounds.push(positionalAudio);
+          this.analysers.push(analyser);
+          if (i === this.mapping.length - 1) {
+            allLoaded = true;
+            this._sounds.map((s) => s.play());
+            setTimeout(() => {
+              resolve();
+            }, 500);
+          }
+        });
       });
     });
   }
@@ -448,9 +496,9 @@ class Totem extends THREE.Group {
       );
       feelingColor = randomColor;
     }
-    const feelingCurves = [];
-    const feelingsGroup = new THREE.Group();
-    const feelingSpheres = [];
+    this.feelingCurves = [];
+    this.feelingsGroup = new THREE.Group();
+    this.feelingSpheres = [];
     var bezierMaterial = new THREE.LineBasicMaterial({ color: feelingColor });
     var feelingMaterial = new THREE.MeshPhysicalMaterial({
       color: feelingColor,
@@ -458,7 +506,7 @@ class Totem extends THREE.Group {
       flatShading: false,
     });
 
-    let shapeOffset = 0;
+    this.shapeOffset = 0;
     this.feelingMappings.map((f, i) => {
       const point = f.feeling.point ? f.feeling.point : { x: 0, y: 0, z: 0 };
       const position = new THREE.Vector3(point.x, point.y, point.z);
@@ -466,32 +514,32 @@ class Totem extends THREE.Group {
       const feelingSphere = new THREE.Mesh(sphereGeometry, feelingMaterial);
       feelingSphere.scale.set(0.15, 0.15, 0.15);
       feelingSphere.position.copy(position);
-      // totem.add(feelingSphere);
-      feelingSpheres.push(feelingSphere);
+      this.totem.add(feelingSphere);
+      this.feelingSpheres.push(feelingSphere);
       var curve = new THREE.QuadraticBezierCurve3(
         new THREE.Vector3(0, -1, 0),
         position,
         new THREE.Vector3(0, 1, 0)
       );
-      feelingCurves.push(curve);
+      this.feelingCurves.push(curve);
       var points = curve.getPoints(40);
       var bezierGeometry = new THREE.BufferGeometry().setFromPoints(points);
       // Create the final object to add to the scene
       var bezierObject = new THREE.Line(bezierGeometry, bezierMaterial);
-      feelingsGroup.add(bezierObject);
-      shapeOffset++;
+      this.feelingsGroup.add(bezierObject);
+      this.shapeOffset++;
     });
-    // totem.add(feelingsGroup);
-    console.log("Shape Offset", shapeOffset);
+    this.totem.add(this.feelingsGroup);
+    console.log("Shape Offset", this.shapeOffset);
   }
 
   _mapShapes() {
-    let colorOffset = 0;
-    var shapeMaterial = new THREE.MeshLambertMaterial({ color: 0xcfddec });
-    const shapeGroup = new THREE.Group();
+    this.colorOffset = 0;
+    this.shapeMaterial = new THREE.MeshLambertMaterial({ color: 0xcfddec });
+    this.shapeGroup = new THREE.Group();
     const radius = 0.5;
     this.shapeMappings.map((s, i) => {
-      colorOffset++;
+      this.colorOffset++;
       const yStep = i / this.shapeMappings.length - 0.5;
       const position = new THREE.Vector3(
         radius * Math.sin(Math.random() * 3.1415 * 2.0),
@@ -503,67 +551,70 @@ class Totem extends THREE.Group {
           var cylinderGeometry = new THREE.CylinderGeometry(0.2, 0.2, 0.5, 32);
           var cylinder = new THREE.Mesh(
             cylinderGeometry,
-            shapeMaterial.clone()
+            this.shapeMaterial.clone()
           );
           cylinder.scale.set(0.2, 0.2, 0.2);
           cylinder.position.copy(position);
           cylinder.lookAt(new THREE.Vector3(0, 0, 0));
           cylinder.rotateOnAxis(new THREE.Vector3(1, 0, 0), Math.PI / 2.0);
-          shapeGroup.add(cylinder);
+          this.shapeGroup.add(cylinder);
           break;
 
         case "Würfel":
           const cubeGeometry = new THREE.BoxGeometry(0.4, 0.4, 0.4);
-          const cube = new THREE.Mesh(cubeGeometry, shapeMaterial.clone());
+          const cube = new THREE.Mesh(cubeGeometry, this.shapeMaterial.clone());
           cube.scale.set(0.2, 0.2, 0.2);
           cube.position.copy(position);
           cube.lookAt(new THREE.Vector3(0, 0, 0));
           cube.rotateOnAxis(new THREE.Vector3(1, 0, 0), Math.PI / 2.0);
-          shapeGroup.add(cube);
+          this.shapeGroup.add(cube);
           break;
 
         case "Kugel":
           const sphereGeometry = new THREE.SphereBufferGeometry(0.26, 32, 32);
-          const sphere = new THREE.Mesh(sphereGeometry, shapeMaterial.clone());
+          const sphere = new THREE.Mesh(
+            sphereGeometry,
+            this.shapeMaterial.clone()
+          );
           sphere.scale.set(0.15, 0.15, 0.15);
           sphere.position.copy(position);
-          shapeGroup.add(sphere);
+          this.shapeGroup.add(sphere);
           break;
 
         case "Kegel":
           const coneGeometry = new THREE.ConeGeometry(0.2, 0.5, 30);
-          const cone = new THREE.Mesh(coneGeometry, shapeMaterial.clone());
+          const cone = new THREE.Mesh(coneGeometry, this.shapeMaterial.clone());
           cone.scale.set(0.2, 0.2, 0.2);
           cone.position.copy(position);
           cone.lookAt(new THREE.Vector3(0, 0, 0));
           cone.rotateOnAxis(new THREE.Vector3(1, 0, 0), Math.PI / 2.0);
-          shapeGroup.add(cone);
+          this.shapeGroup.add(cone);
           break;
 
         case "Ikosaeder":
           var icosahedronGeometry = new THREE.IcosahedronGeometry(0.25, 0);
           var icosahedron = new THREE.Mesh(
             icosahedronGeometry,
-            shapeMaterial.clone()
+            this.shapeMaterial.clone()
           );
           icosahedron.scale.set(0.2, 0.2, 0.2);
           icosahedron.position.copy(position);
           icosahedron.lookAt(new THREE.Vector3(0, 0, 0));
           icosahedron.rotateOnAxis(new THREE.Vector3(0, 1, 0), Math.PI / 2.0);
-          shapeGroup.add(icosahedron);
+          this.shapeGroup.add(icosahedron);
           break;
 
         case "Oktaeder":
           var octahedronGeometry = new THREE.OctahedronGeometry(0.25, 0);
           var octahedron = new THREE.Mesh(
             octahedronGeometry,
-            shapeMaterial.clone()
+            this.shapeMaterial.clone()
           );
           octahedron.position.copy(position);
           octahedron.scale.set(0.2, 0.2, 0.2);
           octahedron.lookAt(new THREE.Vector3(0, 0, 0));
           octahedron.rotateOnAxis(new THREE.Vector3(0, 1, 0), Math.PI / 2.0);
-          shapeGroup.add(octahedron);
+          this.shapeGroup.add(octahedron);
           break;
       }
       // Line
@@ -575,10 +626,10 @@ class Totem extends THREE.Group {
       const lineGeometry = new THREE.BufferGeometry().setFromPoints(points);
       const lineMaterial = new THREE.LineBasicMaterial({ color: 0xffffff });
       const line = new THREE.Line(lineGeometry, lineMaterial);
-      //totem.add(line);
+      this.totem.add(line);
     });
-    // totem.add(shapeGroup);
-    console.log("Color Offset", colorOffset);
+    this.totem.add(this.shapeGroup);
+    console.log("Color Offset", this.colorOffset);
   }
 
   _mapColors() {
@@ -646,54 +697,61 @@ class Totem extends THREE.Group {
 
     if (this._state === "totem") {
       this.renderer.render(this.scene, this.camera);
-    }
 
-    // Analyzers
-    /*
-      let analyzerValues = analysers.map((analyser, i) => {
-        var data = analyser.getAverageFrequency();
-        const val = remap(data, 0.0, 127.0, 0.1, 0.5);
-        const valNorm = remap(data, 0.0, 127.0, 0.0, 1.0);
-        return valNorm;
-      });
-      if (analyzerValues.length > 0) {
-        tubeMesh.material.uniforms.uAnalysers.value = analyzerValues;
-        tubeMesh.material.uniforms.uAnalyserOffset.value =
-          shapeOffset + colorOffset;
+      // Analyzers
+      if (this.mapping !== undefined) {
+        let analyzerValues = this.analysers.map((analyser, i) => {
+          var data = analyser.getAverageFrequency();
+          const val = remap(data, 0.0, 127.0, 0.1, 0.5);
+          const valNorm = remap(data, 0.0, 127.0, 0.0, 1.0);
+          return valNorm;
+        });
+        if (analyzerValues.length > 0) {
+          this.tubeMesh.material.uniforms.uAnalysers.value = analyzerValues;
+          this.tubeMesh.material.uniforms.uAnalyserOffset.value =
+            this.shapeOffset + this.colorOffset;
+        }
+
+        this.shapeGroup.children.forEach((obj, i) => {
+          if (this.analysers[this.shapeOffset + i]) {
+            var data = this.analysers[
+              this.shapeOffset + i
+            ].getAverageFrequency();
+            const val = remap(data, 0.0, 127.0, 0.1, 0.5);
+            obj.scale.set(val, val, val);
+            obj.material.color = this.shapeMaterial.color
+              .clone()
+              .multiplyScalar(val * 1.0);
+          }
+        });
+
+        this.feelingsGroup.children.forEach((curveObj, i) => {
+          if (this.analysers[i]) {
+            var data = this.analysers[i].getAverageFrequency();
+            const val = remap(data, 0.0, 127.0, 0.1, 0.5);
+            var curve = this.feelingCurves[i];
+            var newCenter = curve.getPointAt(0.5).multiplyScalar(val * 10);
+            var newCurve = new THREE.QuadraticBezierCurve3(
+              curve.getPointAt(0.3),
+              newCenter,
+              curve.getPointAt(0.7)
+            );
+            this.feelingSpheres[i].position.copy(newCenter);
+            // Update vertices
+            var points = newCurve.getPoints(40);
+            curveObj.geometry = new THREE.BufferGeometry().setFromPoints(
+              points
+            );
+            curveObj.geometry.verticesNeedUpdate = true;
+            curveObj.geometry.attributes.position.needsUpdate = true;
+          }
+        });
+
+        if (this.tubeMesh) {
+          this.tubeMesh.material.uniforms.uTime.value = this.time;
+        }
       }
-
-      shapeGroup.children.forEach((obj, i) => {
-        if (analysers[shapeOffset + i]) {
-          var data = analysers[shapeOffset + i].getAverageFrequency();
-          const val = remap(data, 0.0, 127.0, 0.1, 0.5);
-          obj.scale.set(val, val, val);
-          obj.material.color = shapeMaterial.color
-            .clone()
-            .multiplyScalar(val * 1.0);
-        }
-      });
-
-      feelingsGroup.children.forEach((curveObj, i) => {
-        if (analysers[i]) {
-          var data = analysers[i].getAverageFrequency();
-          const val = remap(data, 0.0, 127.0, 0.1, 0.5);
-          var curve = feelingCurves[i];
-          var newCenter = curve.getPointAt(0.5).multiplyScalar(val * 10);
-          var newCurve = new THREE.QuadraticBezierCurve3(
-            curve.getPointAt(0.3),
-            newCenter,
-            curve.getPointAt(0.7)
-          );
-          feelingSpheres[i].position.copy(newCenter);
-          // Update vertices
-          var points = newCurve.getPoints(40);
-          curveObj.geometry = new THREE.BufferGeometry().setFromPoints(points);
-          curveObj.geometry.verticesNeedUpdate = true;
-          curveObj.geometry.attributes.position.needsUpdate = true;
-        }
-      });
-      */
-    this.tubeMesh.material.uniforms.uTime.value = this.time;
+    }
 
     if (this.stats) {
       this.stats.update();
@@ -702,22 +760,14 @@ class Totem extends THREE.Group {
 }
 
 export default ({ mapping, onResize, paused, state, onSelect }) => {
+  const exampleMapping = require("../../json/08f406489239afeddc1391e4125cf37b.json");
+
   const canvasRef = useRef();
   const canvasWrapperRef = useRef();
-  const [sounds, setSounds] = useState([]);
   const [renderer, setRenderer] = useState(null);
   const [renderLoop, setRenderLoop] = useState(null);
   const [playingStates, setPlayingStates] = useState([]);
   const [totem, setTotem] = useState(null);
-
-  const prepareDownload = (imageData) => {
-    const downloadLink = document.createElement("a");
-    const dataStr = imageData;
-    downloadLink.href = dataStr;
-    downloadLink.download = `${md5(Date.now())}.png`;
-    document.body.append(downloadLink);
-    downloadLink.click();
-  };
 
   useEffect(() => {
     if (paused && totem) {
@@ -731,15 +781,29 @@ export default ({ mapping, onResize, paused, state, onSelect }) => {
   }, [paused]);
 
   useEffect(() => {
-    console.log("STATE", state);
     if (totem) {
       totem.setState(state);
     }
   }, [state]);
 
   useEffect(() => {
+    if (totem) {
+      totem.pause();
+      totem.dispose();
+      totem.setMapping(mapping, () => {
+        setPlayingStates(totem.sounds.map((s) => s.isPlaying));
+        totem.continue();
+      });
+    }
+  }, mapping);
+
+  useEffect(() => {
     if (canvasRef.current) {
-      const totem = new Totem(canvasRef.current, mapping, onSelect);
+      const totem = new Totem(canvasRef.current, onSelect);
+      if (state === "totem") {
+        totem.setMapping(exampleMapping);
+        totem.setState(state);
+      }
       const resizeHandler = window.addEventListener(
         "resize",
         totem.handleResize.bind(totem),
@@ -770,38 +834,46 @@ export default ({ mapping, onResize, paused, state, onSelect }) => {
 
   return (
     <div className="totem">
-      {process.env.NODE_ENV === "development" ? (
+      {totem !== null ? (
         <div className="sounds-ui">
-          {/* {sounds.map((s, i) => { */}
-          {/*   return ( */}
-          {/*     <span */}
-          {/*       key={i} */}
-          {/*       className={[ */}
-          {/*         "sound-ui", */}
-          {/*         playingStates[i] ? "active" : "inactive", */}
-          {/*       ].join(" ")} */}
-          {/*       onClick={() => { */}
-          {/*         s.isPlaying ? s.stop() : s.play(); */}
-          {/*         setPlayingStates(sounds.map((s) => s.isPlaying)); */}
-          {/*       }} */}
-          {/*     > */}
-          {/*       Sound {i} */}
-          {/*     </span> */}
-          {/*   ); */}
-          {/* })} */}
+          {totem.sounds.map((s, i) => {
+            return (
+              <span
+                key={i}
+                className={[
+                  "sound-ui",
+                  playingStates[i] ? "active" : "inactive",
+                ].join(" ")}
+                onClick={() => {
+                  s.isPlaying ? s.stop() : s.play();
+                  setPlayingStates(totem.sounds.map((s) => s.isPlaying));
+                }}
+              >
+                {playingStates[i] ? (
+                  <span className="emoji">🔊</span>
+                ) : (
+                  <span className="emoji">🔇</span>
+                )}
+              </span>
+            );
+          })}
         </div>
       ) : (
         <></>
       )}
 
       <div className="canvas-wrapper" ref={canvasWrapperRef}>
-        <canvas ref={canvasRef}></canvas>
+        <canvas className="canvas" ref={canvasRef}></canvas>
       </div>
 
-      {/* <ButtonDownloadRendering */}
-      {/*   prepareDownload={prepareDownload} */}
-      {/*   canvasRef={canvasRef.current} */}
-      {/* /> */}
+      <button
+        className="export"
+        onClick={() => {
+          totem.export();
+        }}
+      >
+        Export
+      </button>
 
       {/* <div className="interaction-explanation"> */}
       {/*   <IconMouse /> */}

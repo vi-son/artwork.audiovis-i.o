@@ -6,11 +6,14 @@ import {
   Route,
   Link,
   useLocation,
+  useHistory,
 } from "react-router-dom";
+import md5 from "blueimp-md5";
 import { Narrative } from "@vi.son/components";
 import { ButtonCloseNarrative } from "@vi.son/components";
 import { ButtonOpenNarrative } from "@vi.son/components";
 import { ButtonToExhibition } from "@vi.son/components";
+import { ButtonDownloadRendering } from "@vi.son/components";
 // Local imports
 import Totem from "./artwork/Totem.js";
 import Intro from "./routes/Intro.js";
@@ -27,11 +30,21 @@ const Artwork = () => {
   const [showNarrative, setShowNarrative] = useState(false);
   const [content, setContent] = useState({});
   const [flowSelection, setFlowSelection] = useState("");
+  const [mapping, setMapping] = useState(exampleMapping);
 
-  const exampleMapping = require("../json/08f406489239afeddc1391e4125cf37b.json");
-  const mapping = undefined;
-
+  const history = useHistory();
   const query = useQuery();
+
+  const prepareDownloadJSON = () => {
+    const downloadLink = document.createElement("a");
+    const dataStr =
+      "data:text/json;charset=utf-8," +
+      encodeURIComponent(JSON.stringify(mapping));
+    downloadLink.href = dataStr;
+    downloadLink.download = `${md5(JSON.stringify(mapping))}.json`;
+    document.body.append(downloadLink);
+    downloadLink.click();
+  };
 
   useEffect(() => {
     console.group("Version");
@@ -46,20 +59,34 @@ const Artwork = () => {
     <>
       <h1>{JSON.stringify(flowSelection)}</h1>
       <div className="artwork">
-        {mapping !== undefined ? (
-          <Totem
-            mapping={mapping}
-            paused={showNarrative}
-            state={query.get("state")}
+        <Totem
+          mapping={mapping}
+          paused={showNarrative}
+          state={query.get("state")}
+          onSelect={(s) => setFlowSelection(s)}
+        />
+        <ButtonDownloadRendering
+          canvasRef={document.querySelector(".canvas")}
+        />
+        <button className="btn-download-json" onClick={prepareDownloadJSON}>
+          JSON
+        </button>
+        <div className="btn-upload-json">
+          <button>Upload JSON</button>
+          <input
+            type="file"
+            onChange={(e) => {
+              const fileReader = new FileReader();
+              const lastFile = e.target.files[e.target.files.length - 1];
+              fileReader.readAsText(lastFile);
+              fileReader.addEventListener("load", () => {
+                const data = JSON.parse(fileReader.result);
+                console.log(data);
+                setMapping(data);
+              });
+            }}
           />
-        ) : (
-          <Totem
-            mapping={exampleMapping}
-            paused={showNarrative}
-            state={query.get("state")}
-            onSelect={(s) => setFlowSelection(s)}
-          />
-        )}
+        </div>
       </div>
 
       <div>
@@ -68,7 +95,10 @@ const Artwork = () => {
             <div className="ui">
               <Flow
                 selection={flowSelection}
-                onFinish={() => console.log("Finished")}
+                onFinish={(mapping) => {
+                  setMapping(mapping);
+                  history.push("/end?state=totem");
+                }}
                 onClear={() => setFlowSelection("")}
               />
               <ButtonOpenNarrative
@@ -88,7 +118,6 @@ const Artwork = () => {
           <Route path="/">
             <div className="ui">
               <Intro />
-              <ButtonToExhibition />
             </div>
           </Route>
         </Switch>

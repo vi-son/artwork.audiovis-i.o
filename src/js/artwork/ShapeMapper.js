@@ -1,9 +1,13 @@
 import * as THREE from "three";
 import TWEEN from "@tweenjs/tween.js";
+import { utils } from "@vi.son/components";
+const { mobileCheck } = utils;
 
 class ShapeMapper {
   constructor(onSelect) {
     this._scene = new THREE.Scene();
+
+    this._isMobile = mobileCheck();
 
     this._defaultColor = new THREE.Color(0x7a7a7a);
     this._highlightColor = new THREE.Color(0x323045);
@@ -32,6 +36,9 @@ class ShapeMapper {
     const cubeGeometry = new THREE.BoxGeometry(0.4, 0.4, 0.4);
     this._cube = new THREE.Mesh(cubeGeometry, material.clone());
     this._cube.name = "Würfel";
+    if (this._isMobile) {
+      this._cube.position.set(0.4, 1.2, 0);
+    }
     this._cubeTween = new TWEEN.Tween(this._cube.material).to(
       { opacity: 1 },
       800
@@ -39,7 +46,11 @@ class ShapeMapper {
     // Sphere
     const sphereGeometry = new THREE.SphereBufferGeometry(0.26, 32, 32);
     this._sphere = new THREE.Mesh(sphereGeometry, material.clone());
-    this._sphere.position.set(-0.75, 0, 0);
+    if (this._isMobile) {
+      this._sphere.position.set(-0.4, 1.2, 0);
+    } else {
+      this._sphere.position.set(-0.75, 0, 0);
+    }
     this._sphere.name = "Kugel";
     this._sphereTween = new TWEEN.Tween(this._sphere.material).to(
       { opacity: 1 },
@@ -48,7 +59,11 @@ class ShapeMapper {
     // Cone
     const coneGeometry = new THREE.ConeGeometry(0.2, 0.5, 30);
     this._cone = new THREE.Mesh(coneGeometry, material.clone());
-    this._cone.position.set(0.75, 0, 0);
+    if (this._isMobile) {
+      this._cone.position.set(0.4, 0.6, 0);
+    } else {
+      this._cone.position.set(0.75, 0, 0);
+    }
     this._cone.name = "Kegel";
     this._coneTween = new TWEEN.Tween(this._cone.material).to(
       { opacity: 1 },
@@ -57,7 +72,11 @@ class ShapeMapper {
     // Cylinder
     const cylinderGeometry = new THREE.CylinderGeometry(0.2, 0.2, 0.5, 32);
     this._cylinder = new THREE.Mesh(cylinderGeometry, material.clone());
-    this._cylinder.position.set(-0.75, 0.75, 0);
+    if (this._isMobile) {
+      this._cylinder.position.set(-0.4, 0.6, 0);
+    } else {
+      this._cylinder.position.set(-0.75, 0.75, 0);
+    }
     this._cylinder.name = "Zylinder";
     this._cylinderTween = new TWEEN.Tween(this._cylinder.material).to(
       { opacity: 1 },
@@ -66,7 +85,11 @@ class ShapeMapper {
     // Icosahedron
     const icosahedronGeometry = new THREE.IcosahedronGeometry(0.25, 0);
     this._icosahedron = new THREE.Mesh(icosahedronGeometry, material.clone());
-    this._icosahedron.position.set(0.0, 0.75, 0);
+    if (this._isMobile) {
+      this._icosahedron.position.set(0.4, 0, 0);
+    } else {
+      this._icosahedron.position.set(0.0, 0.75, 0);
+    }
     this._icosahedron.name = "Ikosaeder";
     this._icosahedronTween = new TWEEN.Tween(this._icosahedron.material).to(
       { opacity: 1 },
@@ -75,7 +98,11 @@ class ShapeMapper {
     // Octahedron
     const octahedronGeometry = new THREE.OctahedronGeometry(0.25, 0);
     this._octahedron = new THREE.Mesh(octahedronGeometry, material.clone());
-    this._octahedron.position.set(0.75, 0.75, 0);
+    if (this._isMobile) {
+      this._octahedron.position.set(-0.4, 0, 0);
+    } else {
+      this._octahedron.position.set(0.75, 0.75, 0);
+    }
     this._octahedron.name = "Oktaeder";
     this._octahedronTween = new TWEEN.Tween(this._octahedron.material).to(
       { opacity: 1 },
@@ -83,7 +110,11 @@ class ShapeMapper {
     );
 
     this._group = new THREE.Group();
-    this._group.position.y = -0.5;
+    if (this._isMobile) {
+      this._group.position.y = -0.5;
+    } else {
+      this._group.position.y = -0.5;
+    }
     this._group.add(this._sphere);
     this._group.add(this._cube);
     this._group.add(this._cone);
