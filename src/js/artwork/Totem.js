@@ -23,6 +23,8 @@ import "../../sass/components/Totem.sass";
 // SVG imports
 import IconMouse from "../../../assets/svg/mouse.svg";
 // GLSL imports
+import basicVertexShader from "../../glsl/basic.vert.glsl";
+import audioDataFragmentShader from "../../glsl/audiodata.frag.glsl";
 import tubeVertexShader from "../../glsl/tubes.vert.glsl";
 import tubeFragmentShader from "../../glsl/tubes.frag.glsl";
 import backgroundVertexShader from "../../glsl/background.vert.glsl";
@@ -43,6 +45,30 @@ class Totem extends THREE.Group {
     // Mappings
     this.mapping = null;
     this._sounds = [];
+
+    // Render Targets
+    this._audioDataRT = new THREE.WebGLRenderTarget(10, 32, {
+      type: THREE.FloatType,
+    });
+    this._offscreenScene = new THREE.Scene();
+    const planeGeometry = new THREE.PlaneGeometry(2, 2);
+    this._audioDataMaterial = new THREE.ShaderMaterial({
+      uniforms: {
+        uAverageFrequencies: { value: [] },
+        uFrequenciesA: { value: [] },
+        uFrequenciesB: { value: [] },
+        uFrequenciesC: { value: [] },
+        uFrequenciesD: { value: [] },
+        uFrequenciesE: { value: [] },
+      },
+      vertexShader: basicVertexShader,
+      fragmentShader: audioDataFragmentShader,
+    });
+    this._fullscreenQuad = new THREE.Mesh(
+      planeGeometry,
+      this._audioDataMaterial
+    );
+    this._offscreenScene.add(this._fullscreenQuad);
 
     // Scene elements
     this.deltatime = 0;
@@ -88,6 +114,14 @@ class Totem extends THREE.Group {
 
   get sounds() {
     return this._sounds;
+  }
+
+  pauseSound(i) {
+    this._sounds[i].pause();
+  }
+
+  playSound(i) {
+    this._sounds[i].play();
   }
 
   _resetBackground() {
@@ -239,8 +273,8 @@ class Totem extends THREE.Group {
           return new THREE.Vector3();
         }
       });
-    const numSides = 4;
-    const subdivisions = 50;
+    const numSides = 3;
+    const subdivisions = 30;
     this.tubeMaterial = new THREE.RawShaderMaterial({
       vertexShader: tubeVertexShader,
       fragmentShader: tubeFragmentShader,
@@ -257,7 +291,7 @@ class Totem extends THREE.Group {
           type: "vec2",
           value: new THREE.Vector2(this.size.width, this.size.height),
         },
-        uThickness: { type: "f", value: 0.02 },
+        uThickness: { type: "f", value: 0.05 },
         uTime: { type: "f", value: 2.5 },
         uColors: {
           type: "a",
@@ -280,6 +314,9 @@ class Totem extends THREE.Group {
             new THREE.Vector3(0, 0, 0),
             new THREE.Vector3(0, 3, 0),
           ],
+        },
+        uAudioDataTexture: {
+          value: this._audioDataRT.texture,
         },
       },
     });
@@ -696,8 +733,6 @@ class Totem extends THREE.Group {
     }
 
     if (this._state === "totem") {
-      this.renderer.render(this.scene, this.camera);
-
       // Analyzers
       if (this.mapping !== undefined) {
         let analyzerValues = this.analysers.map((analyser, i) => {
@@ -707,6 +742,7 @@ class Totem extends THREE.Group {
           return valNorm;
         });
         if (analyzerValues.length > 0) {
+          this._audioDataMaterial.uniforms.uAverageFrequencies.value = analyzerValues;
           this.tubeMesh.material.uniforms.uAnalysers.value = analyzerValues;
           this.tubeMesh.material.uniforms.uAnalyserOffset.value =
             this.shapeOffset + this.colorOffset;
@@ -747,9 +783,16 @@ class Totem extends THREE.Group {
           }
         });
 
+        this.renderer.setRenderTarget(this._audioDataRT);
+        this.renderer.render(this._offscreenScene, this.backgroundCamera);
+        this.renderer.setRenderTarget(null);
+
         if (this.tubeMesh) {
           this.tubeMesh.material.uniforms.uTime.value = this.time;
+          this.tubeMesh.material.uniforms.uAudioDataTexture.value = this._audioDataRT.texture;
         }
+
+        this.renderer.render(this.scene, this.camera);
       }
     }
 
@@ -759,128 +802,4 @@ class Totem extends THREE.Group {
   }
 }
 
-export default ({ mapping, onResize, paused, state, onSelect }) => {
-  const exampleMapping = require("../../json/08f406489239afeddc1391e4125cf37b.json");
-
-  const canvasRef = useRef();
-  const canvasWrapperRef = useRef();
-  const [renderer, setRenderer] = useState(null);
-  const [renderLoop, setRenderLoop] = useState(null);
-  const [playingStates, setPlayingStates] = useState([]);
-  const [totem, setTotem] = useState(null);
-
-  useEffect(() => {
-    if (paused && totem) {
-      console.log("pause");
-      totem.pause();
-    }
-    if (!paused && totem) {
-      console.log("contiune");
-      totem.continue();
-    }
-  }, [paused]);
-
-  useEffect(() => {
-    if (totem) {
-      totem.setState(state);
-    }
-  }, [state]);
-
-  useEffect(() => {
-    if (totem) {
-      totem.pause();
-      totem.dispose();
-      totem.setMapping(mapping, () => {
-        setPlayingStates(totem.sounds.map((s) => s.isPlaying));
-        totem.continue();
-      });
-    }
-  }, mapping);
-
-  useEffect(() => {
-    if (canvasRef.current) {
-      const totem = new Totem(canvasRef.current, onSelect);
-      if (state === "totem") {
-        totem.setMapping(exampleMapping);
-        totem.setState(state);
-      }
-      const resizeHandler = window.addEventListener(
-        "resize",
-        totem.handleResize.bind(totem),
-        false
-      );
-      const pointerUpHandler = window.addEventListener(
-        "pointerup",
-        totem.handlePointerUp.bind(totem),
-        false
-      );
-      const pointerDownHandler = window.addEventListener(
-        "pointerdown",
-        totem.handlePointerDown.bind(totem),
-        false
-      );
-      const pointerMoveHandler = window.addEventListener(
-        "pointermove",
-        totem.handlePointerMove.bind(totem),
-        false
-      );
-      setTotem(totem);
-    }
-
-    return () => {
-      // @TODO dispose totem
-    };
-  }, []);
-
-  return (
-    <div className="totem">
-      {totem !== null ? (
-        <div className="sounds-ui">
-          {totem.sounds.map((s, i) => {
-            return (
-              <span
-                key={i}
-                className={[
-                  "sound-ui",
-                  playingStates[i] ? "active" : "inactive",
-                ].join(" ")}
-                onClick={() => {
-                  s.isPlaying ? s.stop() : s.play();
-                  setPlayingStates(totem.sounds.map((s) => s.isPlaying));
-                }}
-              >
-                {playingStates[i] ? (
-                  <span className="emoji">🔊</span>
-                ) : (
-                  <span className="emoji">🔇</span>
-                )}
-              </span>
-            );
-          })}
-        </div>
-      ) : (
-        <></>
-      )}
-
-      <div className="canvas-wrapper" ref={canvasWrapperRef}>
-        <canvas className="canvas" ref={canvasRef}></canvas>
-      </div>
-
-      <button
-        className="export"
-        onClick={() => {
-          totem.export();
-        }}
-      >
-        Export
-      </button>
-
-      {/* <div className="interaction-explanation"> */}
-      {/*   <IconMouse /> */}
-      {/*   <article className="text"> */}
-      {/*     Klick und ziehen zum Drehen Mausrad für Zoom */}
-      {/*   </article> */}
-      {/* </div> */}
-    </div>
-  );
-};
+export default Totem;

@@ -12,20 +12,52 @@ class FeelingMapper {
     this._onSelect = onSelect;
 
     // Light
-    var light = new THREE.HemisphereLight(0xffffff, 0x666666, 2.0);
+    var light = new THREE.HemisphereLight(0xffffff, 0x666666, 1.0);
     light.position.set(10, 10, 0);
     this._scene.add(light);
 
     this._feelingMap = new Map();
     this._feelings = [
-      ["klar", "aufkmersam", "neugierig"],
-      ["begeistert", "froh", "gelassen"],
-      ["bewundernd", "vertrauend", "akzeptierend"],
-      ["erschrocken", "ängstlich", "besorgt"],
-      ["erstaunt", "überrascht", "verwirrt"],
-      ["betrübt", "traurig", "nachdenklich"],
-      ["angewidert", "ablehnend", "gelangweilt"],
-      ["wütend", "verärgert", "gereizt"],
+      [
+        { text: "klar", color: 0xff7c14 },
+        { text: "aufkmersam", color: 0xffac6a },
+        { text: "neugierig", color: 0xf6c299 },
+      ],
+      [
+        { text: "begeistert", color: 0xffd013 },
+        { text: "froh", color: 0xffdd57 },
+        { text: "gelassen", color: 0xffebaa },
+      ],
+      [
+        { text: "bewundernd", color: 0x1a621f },
+        { text: "vertrauend", color: 0x4a9a50 },
+        { text: "akzeptierend", color: 0x97cb9b },
+      ],
+      [
+        { text: "erschrocken", color: 0x196b64 },
+        { text: "ängstlich", color: 0x47a49d },
+        { text: "besorgt", color: 0x90d7d1 },
+      ],
+      [
+        { text: "erstaunt", color: 0x205489 },
+        { text: "überrascht", color: 0x5989ba },
+        { text: "verwirrt", color: 0x9db7d1 },
+      ],
+      [
+        { text: "betrübt", color: 0x2c2a8d },
+        { text: "traurig", color: 0x5862d6 },
+        { text: "nachdenklich", color: 0xa09fd7 },
+      ],
+      [
+        { text: "angewidert", color: 0x612fa7 },
+        { text: "ablehnend", color: 0x9e61d3 },
+        { text: "gelangweilt", color: 0xcc90e1 },
+      ],
+      [
+        { text: "wütend", color: 0xd92800 },
+        { text: "verärgert", color: 0xd94d2d },
+        { text: "gereizt", color: 0xd97d68 },
+      ],
     ];
     this._selectedId = -1;
 
@@ -36,7 +68,7 @@ class FeelingMapper {
   }
 
   _create() {
-    const material = new THREE.MeshLambertMaterial({
+    const material = new THREE.MeshBasicMaterial({
       color: 0x7a7a7a,
       side: THREE.DoubleSide,
       flatShading: true,
@@ -68,9 +100,11 @@ class FeelingMapper {
       geometry.setAttribute("position", new THREE.BufferAttribute(vertices, 3));
       geometry.computeVertexNormals();
       geometry.computeFaceNormals();
-      const mesh = new THREE.Mesh(geometry, material.clone());
+      const faceMaterial = material.clone();
+      faceMaterial.color.set(row[0].color);
+      const mesh = new THREE.Mesh(geometry, faceMaterial);
       this._root.add(mesh);
-      this._feelingMap.set(mesh.id, row[0]);
+      this._feelingMap.set(mesh.id, row[0].text);
       row.slice(1).map((f, j) => {
         geometry = new THREE.BufferGeometry();
         var vert = [];
@@ -97,9 +131,11 @@ class FeelingMapper {
         );
         geometry.computeVertexNormals();
         geometry.computeFaceNormals();
-        const mesh = new THREE.Mesh(geometry, material.clone());
+        const faceMaterial = material.clone();
+        faceMaterial.color.set(f.color);
+        const mesh = new THREE.Mesh(geometry, faceMaterial);
         this._root.add(mesh);
-        this._feelingMap.set(mesh.id, f);
+        this._feelingMap.set(mesh.id, f.text);
         prevY = v;
         prevX = u;
         prevX1 = u1;
@@ -133,29 +169,29 @@ class FeelingMapper {
 
   update(deltaTime) {
     this._root.children.forEach((obj) => {
-      new TWEEN.Tween(obj.material.color)
-        .to(
-          {
-            r: this._defaultColor.r,
-            g: this._defaultColor.g,
-            b: this._defaultColor.b,
-          },
-          300
-        )
-        .start();
+      // new TWEEN.Tween(obj.material.color)
+      //   .to(
+      //     {
+      //       r: this._defaultColor.r,
+      //       g: this._defaultColor.g,
+      //       b: this._defaultColor.b,
+      //     },
+      //     300
+      //   )
+      //   .start();
     });
     if (this._raycastHit.length > 0) {
       const { object } = this._raycastHit[0];
-      new TWEEN.Tween(object.material.color)
-        .to(
-          {
-            r: this._highlightColor.r,
-            g: this._highlightColor.g,
-            b: this._highlightColor.b,
-          },
-          300
-        )
-        .start();
+      // new TWEEN.Tween(object.material.color)
+      //   .to(
+      //     {
+      //       r: this._highlightColor.r,
+      //       g: this._highlightColor.g,
+      //       b: this._highlightColor.b,
+      //     },
+      //     300
+      //   )
+      //   .start();
     }
   }
 

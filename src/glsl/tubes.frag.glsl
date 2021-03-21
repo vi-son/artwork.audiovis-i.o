@@ -7,11 +7,14 @@ uniform int uStopCount;
 uniform vec2 uResolution;
 uniform vec3 uColors[5];
 uniform float uAnalysers[5];
+uniform sampler2D uAudioDataTexture;
 
 varying vec3 vViewPosition;
 
 void main() {
   float d = vViewPosition.x;
+  vec4 audioData = texture2D(uAudioDataTexture, vec2(0.5, d));
+
   vec3 color = vec3(0);
   if (uStopCount == 1) {
     vec3 single_color_stop = uColors[0];
@@ -28,5 +31,6 @@ void main() {
         color += color_stop;
     }
   }
+ 
   gl_FragColor = vec4(color, 1.0);
 }

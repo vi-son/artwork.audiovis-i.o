@@ -15,7 +15,7 @@ import { ButtonOpenNarrative } from "@vi.son/components";
 import { ButtonToExhibition } from "@vi.son/components";
 import { ButtonDownloadRendering } from "@vi.son/components";
 // Local imports
-import Totem from "./artwork/Totem.js";
+import TotemUI from "./routes/TotemUI.js";
 import Intro from "./routes/Intro.js";
 import Flow from "./routes/Flow.js";
 import { get } from "./api.js";
@@ -27,6 +27,8 @@ function useQuery() {
 }
 
 const Artwork = () => {
+  const exampleMapping = require("../json/08f406489239afeddc1391e4125cf37b.json");
+
   const [showNarrative, setShowNarrative] = useState(false);
   const [content, setContent] = useState({});
   const [flowSelection, setFlowSelection] = useState("");
@@ -59,34 +61,12 @@ const Artwork = () => {
     <>
       <h1>{JSON.stringify(flowSelection)}</h1>
       <div className="artwork">
-        <Totem
+        <TotemUI
           mapping={mapping}
           paused={showNarrative}
           state={query.get("state")}
           onSelect={(s) => setFlowSelection(s)}
         />
-        <ButtonDownloadRendering
-          canvasRef={document.querySelector(".canvas")}
-        />
-        <button className="btn-download-json" onClick={prepareDownloadJSON}>
-          JSON
-        </button>
-        <div className="btn-upload-json">
-          <button>Upload JSON</button>
-          <input
-            type="file"
-            onChange={(e) => {
-              const fileReader = new FileReader();
-              const lastFile = e.target.files[e.target.files.length - 1];
-              fileReader.readAsText(lastFile);
-              fileReader.addEventListener("load", () => {
-                const data = JSON.parse(fileReader.result);
-                console.log(data);
-                setMapping(data);
-              });
-            }}
-          />
-        </div>
       </div>
 
       <div>
@@ -109,15 +89,54 @@ const Artwork = () => {
           </Route>
           <Route path="/end">
             <div className="ui">
+              <div className="mapping-actions">
+                <button
+                  className="btn-download-json"
+                  onClick={prepareDownloadJSON}
+                >
+                  <span className="emoji">💾</span>{" "}
+                  <span className="text">Download</span>
+                </button>
+                <div className="upload-json">
+                  <label className="btn-upload-json" htmlFor="mapping">
+                    <span className="emoji">📂</span>{" "}
+                    <span className="text">Upload</span>
+                  </label>
+                  <input
+                    className="input"
+                    type="file"
+                    id="mapping"
+                    onChange={(e) => {
+                      const fileReader = new FileReader();
+                      const lastFile =
+                        e.target.files[e.target.files.length - 1];
+                      fileReader.readAsText(lastFile);
+                      fileReader.addEventListener("load", () => {
+                        const data = JSON.parse(fileReader.result);
+                        console.log(data);
+                        setMapping(data);
+                      });
+                    }}
+                  />
+                </div>
+              </div>
               <ButtonOpenNarrative
                 showNarrative={showNarrative}
                 setShowNarrative={setShowNarrative}
               />
+              <button className="btn-restart" onClick={() => history.push("/")}>
+                Nochmal
+              </button>
+              <ButtonDownloadRendering
+                canvasRef={document.querySelector(".canvas")}
+              />
+              <ButtonToExhibition />
             </div>
           </Route>
           <Route path="/">
             <div className="ui">
               <Intro />
+              <ButtonToExhibition />
             </div>
           </Route>
         </Switch>

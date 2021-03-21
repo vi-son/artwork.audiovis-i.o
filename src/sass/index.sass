@@ -59,14 +59,71 @@ $font-root: "@vi.son/rouge/fonts"
   .btn-open-narrative
     pointer-events: all
 
-.btn-upload-json
-  position: fixed
-  top: 90px
-  right: 20px
-  z-index:  999999
 
-.btn-download-json
+.mapping-actions
   position: fixed
-  top: 120px
-  right: 20px
+  top: 40px
+  right: 60px
+  display: grid
+  grid-gap: 5px
+  width: 20ch
+  grid-template-rows: 60px 60px
+  pointer-events: all
+  +until($desktops)
+    display: none
+
+  .upload-json
+    z-index:  999999
+    display: flex
+    flex-direction: column
+    justify-content: center
+    align-items: center
+    .input
+      display: none
+    .btn-upload-json
+      pointer-events: all
+      .text
+        margin-left: 10px
+      width: 100%
+      justify-content: center
+      align-items: center
+      display: flex
+      flex-grow: 1
+      text-align: center
+      padding: 10px
+      margin: 0
+      border: 0
+      font-size: 1rem
+      cursor: pointer
+      text-transform: lowercase
+      letter-spacing: 0.01rem
+      background: var(--color-snow)
+      color: var(--color-darkness)
+      box-shadow: 0 0 0 rgba(0, 0, 0, 1)
+      transition: box-shadow 300ms ease
+      font-family: $font-text
+      &:hover
+        color: var(--color-snow)
+        background: var(--color-darkness)
+      &:disabled
+        opacity: 0.05
+        background: 0
+        &:hover
+          box-shadow: none
+
+  .btn-download-json
+    z-index: 999999
+    padding: 10px
+    margin: 0
+    display: flex
+    justify-content: center
+    align-items: center
+    .text
+      margin-left: 10px
+
+.btn-restart
   z-index: 999999
+  position: fixed
+  bottom: 0px
+  left: 230px
+  pointer-events: all

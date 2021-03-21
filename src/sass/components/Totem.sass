@@ -1,8 +1,10 @@
 @import @vi.son/rouge/1-settings/_colors.sass
+@import @vi.son/rouge/1-settings/_breakpoints.sass
+@import @vi.son/rouge/2-tools/_media-queries.sass
 
 .totem
   .canvas-wrapper
-    cursor: pointer
+    cursor: grab
     position: fixed
     height: 100vh
     width: 100vw
@@ -25,6 +27,11 @@
     align-items: center
     opacity: 0.75
     width: 100vw
+    pointer-events: none
+    +until($desktops)
+      display: none
+    &.hidden
+      display: none
     .text
       margin-top: 20px
       max-width: 30ch
@@ -34,21 +41,33 @@
   .sounds-ui
     display: flex
     position: fixed
-    left: 20px
-    top: 130px
+    left: 40px
+    top: 40px
     display: flex
     flex-direction: column
     z-index: 9
     line-height: 1.5
+    &.hidden
+      display: none
     .sound-ui
-      font-size: 1rem
       cursor: pointer
+      font-size: 0.75rem
       &:hover
         color: var(--color-curacao) !important
       &.active
         color: var(--color-snow)
       &.inactive
         color: var(--color-darkness)
+      .sound
+        display: flex
+        justify-content: flex-start
+        align-items: center
+      .emoji
+        margin-right: 10px
+        font-size: 1.6rem
+      .group
+        +until($desktops)
+          display: none
 
 .export
   z-index: 999999
