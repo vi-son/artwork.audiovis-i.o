@@ -117,11 +117,26 @@ class Totem extends THREE.Group {
   }
 
   pauseSound(i) {
-    this._sounds[i].pause();
+    if (this._sounds[i]) {
+      this._sounds[i].pause();
+    }
   }
 
   playSound(i) {
-    this._sounds[i].play();
+    if (this._sounds[i]) {
+      this._sounds[i].play();
+    }
+  }
+
+  isPlaying(i) {
+    if (this._sounds[i]) {
+      return this._sounds[i].isPlaying;
+    }
+    return false;
+  }
+
+  get playingStates() {
+    return this._sounds.map((s) => s.isPlaying);
   }
 
   _resetBackground() {
@@ -149,7 +164,7 @@ class Totem extends THREE.Group {
     this._mapFeelings();
     this._mapShapes();
     this._mapColors();
-    this._loadSounds().then(cb);
+    return this._loadSounds();
   }
 
   setState(state) {
@@ -468,31 +483,36 @@ class Totem extends THREE.Group {
   _loadSounds() {
     // Audio
     this.samplesFolder = `/assets/audio/audiovisio/`;
-    this.audioLoader = new THREE.AudioLoader();
+    this._loadingManager = new THREE.LoadingManager();
+    this.audioLoader = new THREE.AudioLoader(this._loadingManager);
     // Show audio sources
     const audioVisualizerCubes = [];
     let allLoaded = false;
-    return new Promise((resolve, reject) => {
-      this.mapping.map((c, i) => {
-        const sampleFilepath = `${this.samplesFolder}${c.sample}`;
-        const positionalAudio = new THREE.PositionalAudio(this.listener);
-        const analyser = new THREE.AudioAnalyser(positionalAudio, 32);
-        analyser.smoothingTimeConstant = 0.9;
-        this.audioLoader.load(sampleFilepath, (buffer) => {
-          positionalAudio.setBuffer(buffer);
-          positionalAudio.setLoop(true);
-          positionalAudio.setVolume(0.7);
-          this._sounds.push(positionalAudio);
-          this.analysers.push(analyser);
-          if (i === this.mapping.length - 1) {
-            allLoaded = true;
-            this._sounds.map((s) => s.play());
-            setTimeout(() => {
-              resolve();
-            }, 500);
-          }
-        });
+    this.mapping.map((c, i) => {
+      const sampleFilepath = `${this.samplesFolder}${c.sample}`;
+      const positionalAudio = new THREE.PositionalAudio(this.listener);
+      const analyser = new THREE.AudioAnalyser(positionalAudio, 32);
+      analyser.smoothingTimeConstant = 0.9;
+      this.audioLoader.load(sampleFilepath, (buffer) => {
+        positionalAudio.setBuffer(buffer);
+        positionalAudio.setLoop(true);
+        positionalAudio.setVolume(0.7);
+        this._sounds.push(positionalAudio);
+        this.analysers.push(analyser);
       });
+    });
+    return new Promise((resolve, reject) => {
+      this._loadingManager.onProgress = (url, itemsLoaded, itemsTotal) => {
+        if (itemsLoaded / itemsTotal === 1.0) {
+          allLoaded = true;
+          console.log("All sounds loaded");
+          console.log(this._sounds);
+          setTimeout(() => {
+            this._sounds.forEach((s) => s.play());
+            resolve();
+          }, 2000);
+        }
+      };
     });
   }
 

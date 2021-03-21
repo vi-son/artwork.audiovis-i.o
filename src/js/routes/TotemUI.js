@@ -34,12 +34,10 @@ const TotemUI = ({ mapping, onResize, paused, state, onSelect }) => {
 
   useEffect(() => {
     if (totem) {
-      totem.pause();
       totem.dispose();
-      totem.setMapping(mapping, () => {
-        setPlayingStates(totem.sounds.map((s) => s.isPlaying));
-        totem.continue();
-      });
+      setTimeout(() => {
+        totem.setMapping(mapping).then(() => {});
+      }, 1000);
     }
   }, mapping);
 
@@ -93,10 +91,8 @@ const TotemUI = ({ mapping, onResize, paused, state, onSelect }) => {
                   playingStates[i] ? "active" : "inactive",
                 ].join(" ")}
                 onClick={() => {
-                  totem.sounds[i].isPlaying
-                    ? totem.pauseSound(i)
-                    : totem.playSound(i);
-                  setPlayingStates(totem.sounds.map((s) => s.isPlaying));
+                  totem.isPlaying(i) ? totem.pauseSound(i) : totem.playSound(i);
+                  setPlayingStates(totem.playingStates);
                 }}
               >
                 <span className="sound">
