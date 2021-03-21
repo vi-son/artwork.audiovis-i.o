@@ -2,6 +2,7 @@
 import React, { useState, useRef, useEffect } from "react";
 // Local imports
 import Totem from "../artwork/Totem.js";
+import Kontrol from "../components/kontrol/Kontrol.js";
 // Style imports
 import "../../sass/components/Totem.sass";
 // SVG imports
@@ -70,11 +71,21 @@ const TotemUI = ({ mapping, onResize, paused, state, onSelect }) => {
       );
       setTotem(totem);
     }
-
     return () => {
       totem.dispose();
     };
   }, []);
+
+  const intoFullscreen = () => {
+    const canvas = canvasRef.current;
+    if (canvas.requestFullScreen) {
+      canvas.requestFullScreen();
+    } else if (canvas.webkitRequestFullScreen) {
+      canvas.webkitRequestFullScreen();
+    } else if (canvas.mozRequestFullScreen) {
+      canvas.mozRequestFullScreen();
+    }
+  };
 
   return (
     <div className="totem">
@@ -134,6 +145,8 @@ const TotemUI = ({ mapping, onResize, paused, state, onSelect }) => {
           Klick und ziehen zum Drehen Mausrad für Zoom
         </article>
       </div>
+
+      <Kontrol />
     </div>
   );
 };

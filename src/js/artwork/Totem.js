@@ -460,6 +460,7 @@ class Totem extends THREE.Group {
   }
 
   handleResize(e) {
+    console.log("RESIZE");
     const canvasWrapper = document.querySelector(".canvas-wrapper");
     if (canvasWrapper) {
       let newSize = canvasWrapper.getBoundingClientRect();
@@ -474,9 +475,9 @@ class Totem extends THREE.Group {
         newSize.width * window.devicePixelRatio,
         newSize.height * window.devicePixelRatio
       );
+      this.size = newSize;
       // Update renderer
       this.renderer.setSize(newSize.width, newSize.height);
-
       this._mapper.handleResize(this.camera.aspect);
     }
   }
