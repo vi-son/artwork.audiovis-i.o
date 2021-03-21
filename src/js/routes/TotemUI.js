@@ -72,7 +72,7 @@ const TotemUI = ({ mapping, onResize, paused, state, onSelect }) => {
     }
 
     return () => {
-      // @TODO dispose totem
+      totem.dispose();
     };
   }, []);
 

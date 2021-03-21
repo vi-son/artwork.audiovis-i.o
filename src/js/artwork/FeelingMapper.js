@@ -237,7 +237,10 @@ class FeelingMapper {
       this._selectedId = id;
       this._onSelect({
         type: "feeling",
-        mapping: this._feelingMap.get(this._selectedId),
+        mapping: {
+          feeling: this._feelingMap.get(this._selectedId),
+          point: this._raycastHit[0].point,
+        },
       });
     }
   }

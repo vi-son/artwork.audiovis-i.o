@@ -65,12 +65,12 @@ vec3 sample (float t) {
   float z = 0.01;
 
   // Dancing movement
-  // i.z = sin(t * PI + end.z * 3.0 + uTime * 1.75) / 5.0;
-  // i.x = sin(t * PI + end.x * 3.0 + uTime * 1.95) / 5.0;
+  i.z = sin(t * PI + end.z * 3.0 + uTime * 1.75) / 5.0;
+  i.x = sin(t * PI + end.x * 3.0 + uTime * 1.95) / 5.0;
 
   // No dancing movement
-  i.z = 0.01; //sin(t * PI + end.z * 3.0) / 5.0;
-  i.x = 0.01; //sin(t * PI + end.x * 3.0) / 5.0;
+  // i.z = 0.01; //sin(t * PI + end.z * 3.0) / 5.0;
+  // i.x = 0.01; //sin(t * PI + end.x * 3.0) / 5.0;
   return i;
 }
 

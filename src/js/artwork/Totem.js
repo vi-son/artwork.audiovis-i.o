@@ -45,6 +45,7 @@ class Totem extends THREE.Group {
     // Mappings
     this.mapping = null;
     this._sounds = [];
+    this._allLoaded = false;
 
     // Render Targets
     this._audioDataRT = new THREE.WebGLRenderTarget(10, 32, {
@@ -306,7 +307,7 @@ class Totem extends THREE.Group {
           type: "vec2",
           value: new THREE.Vector2(this.size.width, this.size.height),
         },
-        uThickness: { type: "f", value: 0.05 },
+        uThickness: { type: "f", value: 0.02 },
         uTime: { type: "f", value: 2.5 },
         uColors: {
           type: "a",
@@ -487,7 +488,6 @@ class Totem extends THREE.Group {
     this.audioLoader = new THREE.AudioLoader(this._loadingManager);
     // Show audio sources
     const audioVisualizerCubes = [];
-    let allLoaded = false;
     this.mapping.map((c, i) => {
       const sampleFilepath = `${this.samplesFolder}${c.sample}`;
       const positionalAudio = new THREE.PositionalAudio(this.listener);
@@ -503,8 +503,9 @@ class Totem extends THREE.Group {
     });
     return new Promise((resolve, reject) => {
       this._loadingManager.onProgress = (url, itemsLoaded, itemsTotal) => {
+        console.log(itemsLoaded, itemsTotal);
         if (itemsLoaded / itemsTotal === 1.0) {
-          allLoaded = true;
+          this._allLoaded = true;
           console.log("All sounds loaded");
           console.log(this._sounds);
           setTimeout(() => {
@@ -753,6 +754,7 @@ class Totem extends THREE.Group {
     }
 
     if (this._state === "totem") {
+      if (!this._allLoaded) return;
       // Analyzers
       if (this.mapping !== undefined) {
         let analyzerValues = this.analysers.map((analyser, i) => {
@@ -768,44 +770,48 @@ class Totem extends THREE.Group {
             this.shapeOffset + this.colorOffset;
         }
 
-        this.shapeGroup.children.forEach((obj, i) => {
-          if (this.analysers[this.shapeOffset + i]) {
-            var data = this.analysers[
-              this.shapeOffset + i
-            ].getAverageFrequency();
-            const val = remap(data, 0.0, 127.0, 0.1, 0.5);
-            obj.scale.set(val, val, val);
-            obj.material.color = this.shapeMaterial.color
-              .clone()
-              .multiplyScalar(val * 1.0);
-          }
-        });
+        if (this.shapeGroup) {
+          this.shapeGroup.children.forEach((obj, i) => {
+            if (this.analysers[this.shapeOffset + i]) {
+              var data = this.analysers[
+                this.shapeOffset + i
+              ].getAverageFrequency();
+              const val = remap(data, 0.0, 127.0, 0.1, 0.5);
+              obj.scale.set(val, val, val);
+              obj.material.color = this.shapeMaterial.color
+                .clone()
+                .multiplyScalar(val * 1.0);
+            }
+          });
+        }
 
-        this.feelingsGroup.children.forEach((curveObj, i) => {
-          if (this.analysers[i]) {
-            var data = this.analysers[i].getAverageFrequency();
-            const val = remap(data, 0.0, 127.0, 0.1, 0.5);
-            var curve = this.feelingCurves[i];
-            var newCenter = curve.getPointAt(0.5).multiplyScalar(val * 10);
-            var newCurve = new THREE.QuadraticBezierCurve3(
-              curve.getPointAt(0.3),
-              newCenter,
-              curve.getPointAt(0.7)
-            );
-            this.feelingSpheres[i].position.copy(newCenter);
-            // Update vertices
-            var points = newCurve.getPoints(40);
-            curveObj.geometry = new THREE.BufferGeometry().setFromPoints(
-              points
-            );
-            curveObj.geometry.verticesNeedUpdate = true;
-            curveObj.geometry.attributes.position.needsUpdate = true;
-          }
-        });
+        if (this.feelingsGroup) {
+          this.feelingsGroup.children.forEach((curveObj, i) => {
+            if (this.analysers[i]) {
+              const data = this.analysers[i].getAverageFrequency();
+              const val = remap(data, 0.0, 127.0, 0.1, 0.5);
+              const curve = this.feelingCurves[i];
+              const newCenter = curve.getPointAt(0.5).multiplyScalar(val * 10);
+              const newCurve = new THREE.QuadraticBezierCurve3(
+                curve.getPointAt(0.3),
+                newCenter,
+                curve.getPointAt(0.7)
+              );
+              this.feelingSpheres[i].position.copy(newCenter);
+              // Update vertices
+              const points = newCurve.getPoints(40);
+              curveObj.geometry = new THREE.BufferGeometry().setFromPoints(
+                points
+              );
+              curveObj.geometry.verticesNeedUpdate = true;
+              curveObj.geometry.attributes.position.needsUpdate = true;
+            }
+          });
+        }
 
-        this.renderer.setRenderTarget(this._audioDataRT);
-        this.renderer.render(this._offscreenScene, this.backgroundCamera);
-        this.renderer.setRenderTarget(null);
+        // this.renderer.setRenderTarget(this._audioDataRT);
+        // this.renderer.render(this._offscreenScene, this.backgroundCamera);
+        // this.renderer.setRenderTarget(null);
 
         if (this.tubeMesh) {
           this.tubeMesh.material.uniforms.uTime.value = this.time;
