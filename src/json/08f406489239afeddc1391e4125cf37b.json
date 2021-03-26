@@ -1,6 +1,6 @@
-[
-  {
-    "sample": "01-bass/montez-sample-20-e-bass-02.mp3",
+{
+  "bass": {
+    "sample": "bass/montez-sample-20-e-bass-02.mp3",
     "group": "bass",
     "type": "feeling",
     "mapping": {
@@ -12,8 +12,8 @@
       }
     }
   },
-  {
-    "sample": "04-rhythm/montez-sample-12-toms.mp3",
+  "rhythm": {
+    "sample": "rhythm/montez-sample-12-toms.mp3",
     "group": "rhythm",
     "type": "color",
     "mapping": [
@@ -22,8 +22,8 @@
       121
     ]
   },
-  {
-    "sample": "03-guitar/montez-sample-23-chords-git.mp3",
+  "guitar": {
+    "sample": "guitar/montez-sample-23-chords-git.mp3",
     "group": "guitar",
     "type": "color",
     "mapping": [
@@ -32,16 +32,16 @@
       255
     ]
   },
-  {
-    "sample": "05-synthesizer/montez-sample-01-lead-synth.mp3",
+  "synthesizer": {
+    "sample": "synthesizer/montez-sample-01-lead-synth.mp3",
     "group": "synthesizer",
     "type": "shape",
     "mapping": "Ikosaeder"
   },
-  {
-    "sample": "02-chords/montez-sample-16-keys-02.mp3",
+  "chords": {
+    "sample": "chords/montez-sample-16-keys-02.mp3",
     "group": "chords",
     "type": "shape",
     "mapping": "Würfel"
   }
-]
+ }

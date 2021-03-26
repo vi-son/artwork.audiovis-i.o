@@ -1,27 +1,22 @@
 // node_modules imports
 import React, { useRef, useState, useEffect } from "react";
 import { Link, withRouter, useHistory } from "react-router-dom";
+import { useValues, useActions } from "kea";
 import { utils } from "@vi.son/components";
 const { mobileCheck } = utils;
 // Local imports
-import AudioPlayer from "../components/AudioPlayer.js";
-import SelectBox from "../components/SelectBox.js";
-import ColorInput from "../components/ColorInput.js";
-import FeelingsInput from "../components/FeelingsInput.js";
-import ShapeInput from "../components/ShapeInput.js";
+import totemLogic from "../artwork/logic.totem.js";
+import { TOTEM_STATES } from "../artwork/logic.totem.js";
+import AudioPlayer, { playerLogic } from "../components/AudioPlayer.js";
 import Progressbar from "../components/Progressbar.js";
 // SVG imports
 import IconColor from "../../../assets/svg/audiovisio/color.svg";
 import IconFeeling from "../../../assets/svg/audiovisio/feeling.svg";
 import IconShape from "../../../assets/svg/audiovisio/shape.svg";
+// Utils
+import { getRandomInt } from "../utils.js";
 // Style imports
 import "../../sass/routes/Flow.sass";
-
-function getRandomInt(min, max) {
-  min = Math.ceil(min);
-  max = Math.floor(max);
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-}
 
 class Flow extends React.Component {
   constructor(props) {
@@ -30,69 +25,25 @@ class Flow extends React.Component {
 
     this._isMobile = mobileCheck();
 
-    this.audioPlayerRef = React.createRef();
     this.selectBoxRef = React.createRef();
 
     const groupSamples = new Map();
-    groupSamples.set("synthesizer", [
-      "05-synthesizer/montez-sample-01-lead-synth.mp3",
-      "05-synthesizer/montez-sample-19-lead-synth-02.mp3",
-    ]);
-
-    groupSamples.set("guitar", [
-      "03-guitar/montez-sample-02-main-git.mp3",
-      "03-guitar/montez-sample-17-arp-git.mp3",
-      "03-guitar/montez-sample-22-wah-git.mp3",
-      "03-guitar/montez-sample-23-chords-git.mp3",
-      "03-guitar/montez-sample-25-somh-git.mp3",
-    ]);
-
-    groupSamples.set("chords", [
-      "02-chords/montez-sample-03-pad-01.mp3",
-      "02-chords/montez-sample-04-pad-02.mp3",
-      "02-chords/montez-sample-05-pad-03.mp3",
-      "02-chords/montez-sample-14-keys-01.mp3",
-      "02-chords/montez-sample-16-keys-02.mp3",
-      "02-chords/montez-sample-21-keys-03.mp3",
-    ]);
-
-    groupSamples.set("bass", [
-      "01-bass/montez-sample-06-synth-bass-02.mp3",
-      "01-bass/montez-sample-07-synth-bass-01.mp3",
-      "01-bass/montez-sample-18-e-bass-01.mp3",
-      "01-bass/montez-sample-20-e-bass-02.mp3",
-    ]);
-
-    groupSamples.set("rhythm", [
-      "04-rhythm/montez-sample-08-e-perc-01.mp3",
-      "04-rhythm/montez-sample-09-e-perc-02.mp3",
-      "04-rhythm/montez-sample-10-e-drums-01.mp3",
-      "04-rhythm/montez-sample-11-shaker.mp3",
-      "04-rhythm/montez-sample-12-toms.mp3",
-      "04-rhythm/montez-sample-13-hh.mp3",
-      "04-rhythm/montez-sample-24-e-perc-03.mp3",
-    ]);
-
-    this.groups = ["synthesizer", "guitar", "chords", "bass", "rhythm"];
+    Object.keys(process.env.SAMPLES).forEach((group) => {
+      groupSamples.set(group, process.env.SAMPLES[group]);
+    });
+    const groups = Object.keys(process.env.SAMPLES);
 
     this.state = {
       showDebug: false,
       selectedIdx: -1,
       initialized: false,
-      groups: this.groups,
+      groups: groups,
       scenarioCount: 5,
       completedCount: 0,
       isColorReactive: false,
       backgroundColor: "var(--color-snow)",
       groupSamples: groupSamples,
-      unmappedGroups: Array.from(this.groups.values()),
-      currentMapping: {
-        sample: undefined,
-        group: undefined,
-        type: undefined,
-        mapping: undefined,
-      },
-      mappings: [],
+      unmappedGroups: Array.from(groups.values()),
     };
 
     this.prepareNextScenario = this.prepareNextScenario.bind(this);
@@ -100,15 +51,16 @@ class Flow extends React.Component {
   }
 
   componentWillReceiveProps({ selection }) {
-    const newMapping = Object.assign({}, this.state.currentMapping, selection);
-    this.setState({
-      currentMapping: newMapping,
-    });
+    // const newMapping = Object.assign({}, this.state.currentMapping, selection);
+    // this.setState({
+    //   currentMapping: newMapping,
+    // });
   }
 
   prepareNextScenario() {
-    if (this.state.completedCount === this.state.scenarioCount) {
-      this.props.onFinish(this.state.mappings, this.props.history);
+    if (this.state.completedCount + 1 === this.state.scenarioCount) {
+      this.props.audio.pause();
+      this.props.history.push("/totem");
       return;
     }
     this.setState({ backgroundColor: "var(--color-snow)" });
@@ -121,25 +73,21 @@ class Flow extends React.Component {
     const randomSampleIdx = getRandomInt(0, availableSamples.length - 1);
     const selectedSample = availableSamples[randomSampleIdx];
     this.setState({
-      currentMapping: Object.assign({}, this.state.currentMapping, {
-        sample: selectedSample,
-        group: selectedGroup,
-        type: undefined,
-        mapping: undefined,
-      }),
       unmappedGroups: this.state.unmappedGroups.filter(
         (e) => e !== selectedGroup
       ),
       initialized: true,
     });
+    this.actions.setCurrentSample(selectedGroup, selectedSample);
     if (this.selectBoxRef.current) this.selectBoxRef.current.init();
   }
 
   moveToNextScenario() {
+    this.actions.storeMapping(this.props.currentMapping);
     this.setState({
-      mappings: [...this.state.mappings, ...[this.state.currentMapping]],
       completedCount: this.state.completedCount + 1,
     });
+    this.actions.clearCurrentMapping();
     this.prepareNextScenario();
   }
 
@@ -161,159 +109,149 @@ class Flow extends React.Component {
         </button>
         {this.state.showDebug ? (
           <div className="mapping-debug">
+            <b className="label">Mappings:</b>
+            <span>{this.state.scenarioCount}</span>
+            <b className="label">Completed: </b>
             <span>{this.state.completedCount}</span>
-            <h5>Scenario count: {this.state.scenarioCount}</h5>
             <br />
             <hr />
-            {this.state.currentMapping ? (
-              <div className="current-mapping">
-                <span>
-                  <b>Type: </b>
-                  {this.state.currentMapping.type}
-                </span>
-                <span>
-                  <b>Sample: </b> {this.state.currentMapping.sample}
-                </span>
-                <span>
-                  <b>Group: </b>
-                  {this.state.currentMapping.group}
-                </span>
-                <span>{JSON.stringify(this.state.currentMapping.mapping)}</span>
-              </div>
+            {this.props.currentMapping ? (
+              <>
+                <b className="label">Type: </b>
+                <span>{this.props.currentMapping.type}</span>
+                <b className="label">Sample: </b>
+                <span>{this.props.currentMapping.sample}</span>
+                <b className="label">Group: </b>
+                <span>{this.props.currentMapping.group}</span>
+                <b className="label">Current Mapping: </b>
+                <span>{JSON.stringify(this.props.currentMapping.mapping)}</span>
+              </>
             ) : (
               <></>
             )}
             <hr />
+            <b className="label">Groups: </b>
             <ol>
               {this.state.unmappedGroups.map((umg, i) => {
                 return <li key={i}>{umg}</li>;
               })}
             </ol>
             <hr />
-            {this.state.mappings.map((m, i) => {
+            {Object.keys(this.props.mappings).map((key, i) => {
+              const m = this.props.mappings[key];
               return (
                 <small className="mapping" key={i}>
+                  <h3 className="group">{key}</h3>
+                  <b className="sample">Sample (Group): </b>
                   <span>
-                    <b>sample: </b>
                     {m.sample} ({m.group})
                   </span>
-                  <span>
-                    <b>type: </b>
-                    {m.type}
-                  </span>
-                  <span>
-                    <b>mapping: </b>
-                    {JSON.stringify(m.mapping)}
-                  </span>
+                  <b>type: </b>
+                  <span>{m.type}</span>
+                  <b className="label">Mapping: </b>
+                  <span>{JSON.stringify(m.mapping)}</span>
                 </small>
               );
             })}
           </div>
         ) : (
           <></>
-        )}{" "}
+        )}
       </>
     );
 
-    const workflowLayout = (
-      <>
-        <div className="description step-1">
-          <span className="emoji">🔊</span>
-          <h3 className="title">1. Audio</h3>
-          <span className="subtitle">Spiel das Sample ab</span>
-        </div>
+    const WorkflowLayout = () => {
+      return (
+        <>
+          <div className="description step-1">
+            <span className="emoji">🔊</span>
+            <h3 className="title">1. Audio</h3>
+            <span className="subtitle">Spiel das Sample ab</span>
+          </div>
 
-        <AudioPlayer
-          ref={this.audioPlayerRef}
-          fadeDuration={this.fadeDuration}
-          audiosrc={`/assets/audio/audiovisio/${this.state.currentMapping.sample}`}
-          onStopped={() => {
-            this.moveToNextScenario();
-          }}
-        />
+          <AudioPlayer
+          /* onStopped={() => { */
+          /*   this.moveToNextScenario(); */
+          /* }} */
+          />
 
-        {this.state.currentMapping.type !== undefined &&
-        this.state.currentMapping.mapping !== undefined ? (
-          <div className="button-wrapper">
-            <div className="description step-3">
-              <button
-                className="btn-next emoji"
-                onClick={() => {
-                  this.setState({
-                    currentMapping: { type: undefined, mapping: undefined },
-                  });
-                }}
-              >
-                🔧
-              </button>
-              <div className="text back">
-                <h3 className="title">Zurück</h3>
-                <span>Mapping ändern</span>
+          {this.props.currentMapping.type !== undefined &&
+          this.props.currentMapping.mapping !== undefined ? (
+            <div className="button-wrapper">
+              <div className="description step-3">
+                <button
+                  className="btn-next emoji"
+                  onClick={() => {
+                    this.actions.clearCurrentMapping();
+                  }}
+                >
+                  🔧
+                </button>
+                <div className="text back">
+                  <h3 className="title">Zurück</h3>
+                  <span>Mapping ändern</span>
+                </div>
+                <div className="text next">
+                  <h3 className="title">Weiter</h3>
+                  <span>nächster Schritt</span>
+                </div>
+                <button
+                  className="btn-next emoji"
+                  onClick={() => {
+                    /* this.audioPlayerRef.current.stopAudio(); */
+                    this.moveToNextScenario();
+                  }}
+                >
+                  👉
+                </button>
               </div>
-              <div className="text next">
-                <h3 className="title">Weiter</h3>
-                <span>nächster Schritt</span>
-              </div>
-              <button
-                className="btn-next emoji"
-                onClick={() => {
-                  this.audioPlayerRef.current.stopAudio();
-                  this.props.onClear();
-                  this.props.history.push("/flow");
-                }}
-              >
-                👉
-              </button>
             </div>
-          </div>
-        ) : (
-          <></>
-        )}
+          ) : (
+            <></>
+          )}
 
-        {this.state.currentMapping.type === undefined &&
-        this.state.currentMapping.mapping === undefined ? (
-          <div className="mapping-selection">
-            <Link
-              to="/flow?state=color-input"
-              className="input-selection"
-              onClick={this.props.onClear}
-            >
-              <IconColor />
-              <span>Farbe</span>
-            </Link>
-            <Link
-              to="/flow?state=feeling-input"
-              className="input-selection"
-              onClick={this.props.onClear}
-            >
-              <IconFeeling />
-              <span>Gefühl</span>
-            </Link>
-            <Link
-              to="/flow?state=shape-input"
-              className="input-selection"
-              onClick={this.props.onClear}
-            >
-              <IconShape />
-              <span>Form</span>
-            </Link>
-
-            {this.state.showDebug ? (
-              <h4 className="debug">{JSON.stringify(this.props.selection)}</h4>
-            ) : (
-              <></>
-            )}
-          </div>
-        ) : (
-          <></>
-        )}
-      </>
-    );
+          {this.props.currentMapping.type === undefined &&
+          this.props.currentMapping.mapping === undefined ? (
+            <div className="mapping-selection">
+              <div
+                className="input-selection"
+                onClick={() => {
+                  this.actions.setState(TOTEM_STATES.COLOR_MAPPING);
+                }}
+              >
+                <IconColor />
+                <span>Farbe</span>
+              </div>
+              <div
+                className="input-selection"
+                onClick={() => {
+                  this.actions.setState(TOTEM_STATES.FEELING_MAPPING);
+                }}
+              >
+                <IconFeeling />
+                <span>Gefühl</span>
+              </div>
+              <div
+                className="input-selection"
+                onClick={() => {
+                  this.actions.setState(TOTEM_STATES.SHAPE_MAPPING);
+                }}
+              >
+                <IconShape />
+                <span>Form</span>
+              </div>
+            </div>
+          ) : (
+            <></>
+          )}
+        </>
+      );
+    };
 
     return (
       <main className="flow">
         {this.state.completedCount !== this.state.scenarioCount ? (
-          workflowLayout
+          <WorkflowLayout />
         ) : (
           <></>
         )}
@@ -330,4 +268,4 @@ class Flow extends React.Component {
   }
 }
 
-export default withRouter(Flow);
+export default withRouter(totemLogic(playerLogic(Flow)));

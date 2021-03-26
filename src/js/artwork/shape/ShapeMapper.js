@@ -2,9 +2,11 @@ import * as THREE from "three";
 import TWEEN from "@tweenjs/tween.js";
 import { utils } from "@vi.son/components";
 const { mobileCheck } = utils;
+// Local imports
+import totemLogic, { MAPPINGS } from "../logic.totem.js";
 
 class ShapeMapper {
-  constructor(onSelect) {
+  constructor() {
     this._scene = new THREE.Scene();
 
     this._isMobile = mobileCheck();
@@ -16,7 +18,9 @@ class ShapeMapper {
     this._selectedShape = null;
     this._mouseDown = false;
 
-    this._onSelect = onSelect;
+    this._onSelect = (type, mapping) => {
+      totemLogic.actions.mapCurrentSampleTo(type, mapping);
+    };
 
     // Light
     var light = new THREE.HemisphereLight(0xffffff, 0x666666, 2.0);
@@ -155,7 +159,7 @@ class ShapeMapper {
       new TWEEN.Tween(object.material.color).to(toColor, 100).start();
       if (this._mouseDown) {
         this._selectedShape = object;
-        this._onSelect({ type: "shape", mapping: this._selectedShape.name });
+        this._onSelect(MAPPINGS.SHAPE, this._selectedShape.name);
       }
     } else {
       this._group.children.forEach((object) => {

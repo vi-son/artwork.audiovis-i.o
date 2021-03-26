@@ -2,6 +2,7 @@ const CopyPlugin = require("copy-webpack-plugin");
 const FaviconsWebpackPlugin = require("favicons-webpack-plugin");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const WorkboxPlugin = require("workbox-webpack-plugin");
+const fs = require("fs");
 const package = require("./package.json");
 const path = require("path");
 const shell = require("shelljs");
@@ -15,6 +16,23 @@ function getVersionFromGit() {
     commit: gitCommit.trim(),
     package: package,
   };
+}
+
+function readSamplesFromFiles() {
+  const samples = {};
+  const groups = fs
+    .readdirSync(path.resolve(__dirname, "assets/audio/samples"))
+    .filter((e) => e !== ".DS_Store");
+  groups.forEach((group) => {
+    samples[group] = fs
+      .readdirSync(path.resolve(__dirname, `assets/audio/samples/${group}`))
+      .filter((e) => e !== ".DS_Store")
+      .map((file) => `${group}/${file}`);
+  });
+  console.group("--- SAMPLES ---");
+  console.log(samples);
+  console.groupEnd();
+  return samples;
 }
 
 module.exports = (env) => {
@@ -113,6 +131,7 @@ module.exports = (env) => {
       new webpack.DefinePlugin({
         "process.env.NODE_ENV": JSON.stringify(env.NODE_ENV),
         "process.env.VERSION": JSON.stringify(getVersionFromGit()),
+        "process.env.SAMPLES": JSON.stringify(readSamplesFromFiles()),
       }),
       new HtmlWebpackPlugin({
         template: __dirname + "/src/html/index.html",

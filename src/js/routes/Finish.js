@@ -5,8 +5,6 @@ import md5 from "blueimp-md5";
 // Local imports
 import Layout from "../Layout.js";
 import Totem from "../components/Totem.js";
-// Style imports
-import "../../sass/routes/Finish.sass";
 
 class Finish extends React.Component {
   constructor(props) {

@@ -12,14 +12,13 @@ import * as dat from "dat.gui";
 import { utils } from "@vi.son/components";
 const { mobileCheck } = utils;
 // Local imports
+import totemLogic, { TOTEM_STATES } from "./logic.totem.js";
 import createLineGeometry from "../utils/createLineGeometry.js";
 import { remap, randomIndex } from "../utils/math.js";
 import Mapper from "./Mapper.js";
-import ColorMapper from "./ColorMapper.js";
-import ShapeMapper from "./ShapeMapper.js";
-import FeelingMapper from "./FeelingMapper.js";
-// Style imports
-import "../../sass/components/Totem.sass";
+import ColorMapper from "./color/ColorMapper.js";
+import ShapeMapper from "./shape/ShapeMapper.js";
+import FeelingMapper from "./feeling/FeelingMapper.js";
 // SVG imports
 import IconMouse from "../../../assets/svg/mouse.svg";
 // GLSL imports
@@ -31,19 +30,13 @@ import backgroundVertexShader from "../../glsl/background.vert.glsl";
 import backgroundFragmentShader from "../../glsl/background.frag.glsl";
 
 class Totem extends THREE.Group {
-  constructor(canvas, selectionHandler) {
+  constructor(canvas) {
     super();
 
     this._isMobile = mobileCheck();
-
-    this._state = null;
     this._canvas = canvas;
-    this._selectionHandler = selectionHandler;
-
     this._exporter = new GLTFExporter();
-
-    // Mappings
-    this.mapping = null;
+    this._paused = false;
     this._sounds = [];
     this._allLoaded = false;
 
@@ -81,63 +74,52 @@ class Totem extends THREE.Group {
     this._setupBackground();
     this._setupRaycasting();
 
-    this._mapper = new Mapper();
-    this.colorInput = new ColorMapper(this.renderer, (mapping) => {
-      const [r, g, b] = mapping.mapping;
-      this.backgroundMaterial.uniforms.uColor.value = new THREE.Color(
-        `rgb(${r}, ${g}, ${b})`
-      );
-      this._selectionHandler(mapping);
-    });
-    this.shapeMapper = new ShapeMapper((mapping) => {
-      this._selectionHandler(mapping);
-    });
-    this.feelingMapper = new FeelingMapper((mapping) => {
-      this._selectionHandler(mapping);
-    });
+    this.colorInput = new ColorMapper();
+    this.shapeMapper = new ShapeMapper();
+    this.feelingMapper = new FeelingMapper();
+
+    // Event handler
+    const resizeHandler = window.addEventListener(
+      "resize",
+      this.handleResize.bind(this),
+      false
+    );
+    const pointerUpHandler = window.addEventListener(
+      "pointerup",
+      this.handlePointerUp.bind(this),
+      false
+    );
+    const pointerDownHandler = window.addEventListener(
+      "pointerdown",
+      this.handlePointerDown.bind(this),
+      false
+    );
+    const pointerMoveHandler = window.addEventListener(
+      "pointermove",
+      this.handlePointerMove.bind(this),
+      false
+    );
 
     // Stats
     this.stats = new Stats();
+    this.stats.dom.className = "stats";
     document.body.appendChild(this.stats.dom);
   }
 
   pause() {
     this.renderer.setAnimationLoop(null);
     this.clock.stop();
-    this._sounds.map((s) => s.pause());
+    totemLogic.values.sounds.forEach((s) => s.setVolume(0.0));
+    totemLogic.actions.updateSamples(totemLogic.values.sounds);
+    this._paused = true;
   }
 
   continue() {
     this.renderer.setAnimationLoop(this._renderLoop.bind(this));
     this.clock.start();
-    this._sounds.map((s) => s.play());
-  }
-
-  get sounds() {
-    return this._sounds;
-  }
-
-  pauseSound(i) {
-    if (this._sounds[i]) {
-      this._sounds[i].pause();
-    }
-  }
-
-  playSound(i) {
-    if (this._sounds[i]) {
-      this._sounds[i].play();
-    }
-  }
-
-  isPlaying(i) {
-    if (this._sounds[i]) {
-      return this._sounds[i].isPlaying;
-    }
-    return false;
-  }
-
-  get playingStates() {
-    return this._sounds.map((s) => s.isPlaying);
+    totemLogic.values.sounds.forEach((s) => s.setVolume(1.0));
+    totemLogic.actions.updateSamples(totemLogic.values.sounds);
+    this._paused = false;
   }
 
   _resetBackground() {
@@ -157,38 +139,40 @@ class Totem extends THREE.Group {
     this.analysers.splice(0, this.analysers.length);
   }
 
-  setMapping(mapping, cb) {
-    this.mapping = mapping;
+  reactOnMappings() {
+    console.log("Mappings: ", Object.values(totemLogic.values.mappings));
+    const mappingsArray = Object.values(totemLogic.values.mappings);
     // Mappings
-    this._setupMappings();
-    this._setupTube();
-    this._mapFeelings();
-    this._mapShapes();
-    this._mapColors();
-    return this._loadSounds();
+    this._setupMappings(mappingsArray);
+    this._setupTube(mappingsArray);
+    this._mapFeelings(mappingsArray);
+    this._mapShapes(mappingsArray);
+    this._mapColors(mappingsArray);
+    this._loadSounds(mappingsArray);
   }
 
-  setState(state) {
-    this._state = state;
+  reactOnStateChange() {
     this._sounds.forEach((s) => s.pause());
-    switch (this._state) {
-      case "shape-input":
+    switch (totemLogic.values.state) {
+      case TOTEM_STATES.SHAPE_MAPPING:
         this.controls.reset();
         this.shapeMapper.fadeIn();
-        this._resetBackground();
         break;
-      case "feeling-input":
+
+      case TOTEM_STATES.FEELING_MAPPING:
         this.controls.reset();
         this.feelingMapper.fadeIn();
-        this._resetBackground();
         break;
-      case "color-input":
+
+      case TOTEM_STATES.COLOR_MAPPING:
         this.controls.reset();
         this.colorInput.fadeIn();
         break;
-      case "totem":
-        this.controls.reset();
+
+      case TOTEM_STATES.TOTEM:
         this._resetBackground();
+        this.reactOnMappings();
+        this.controls.reset();
         break;
     }
   }
@@ -233,8 +217,8 @@ class Totem extends THREE.Group {
     this.backgroundScene.add(this.backgroundPlane);
   }
 
-  _setupMappings() {
-    this.colorMappings = this.mapping
+  _setupMappings(mappingsArray) {
+    this.colorMappings = mappingsArray
       .filter((m) => m.type === "color")
       .map((m, i) => {
         return {
@@ -253,7 +237,7 @@ class Totem extends THREE.Group {
         )
     );
 
-    this.shapeMappings = this.mapping
+    this.shapeMappings = mappingsArray
       .filter((m) => m.type === "shape")
       .map((m, i) => {
         return {
@@ -262,7 +246,7 @@ class Totem extends THREE.Group {
         };
       });
 
-    this.feelingMappings = this.mapping
+    this.feelingMappings = mappingsArray
       .filter((m) => m.type === "feeling")
       .map((m, i) => {
         return {
@@ -279,8 +263,8 @@ class Totem extends THREE.Group {
     }
   }
 
-  _setupTube() {
-    const colorToUniformsArray = new Array(this.mapping.length)
+  _setupTube(mappingsArray) {
+    const colorToUniformsArray = new Array(mappingsArray.length)
       .fill(0)
       .map((_, i) => {
         if (this.colors[i]) {
@@ -315,7 +299,7 @@ class Totem extends THREE.Group {
         },
         uAnalysers: {
           type: "a",
-          value: new Array(this.mapping.length).fill(0),
+          value: new Array(mappingsArray.length).fill(0),
         },
         uAnalyserOffset: {
           type: "i",
@@ -378,6 +362,11 @@ class Totem extends THREE.Group {
     this.controls.enableDamping = false;
     this.controls.dampingFactor = 0.1;
     this.controls.saveState();
+    this.controls.addEventListener("change", () => {
+      if (this._paused) {
+        this.update();
+      }
+    });
 
     // Audio listener
     this.analysers = [];
@@ -391,34 +380,32 @@ class Totem extends THREE.Group {
   }
 
   handlePointerMove(e) {
-    this._mapper.handlePointerMove(e, { size: this.size });
     this._mousePosition.x =
       ((e.clientX - this.size.x) / this.size.width) * 2 - 1;
     this._mousePosition.y =
       -((e.clientY - this.size.y) / this.size.height) * 2 + 1;
-    switch (this._state) {
-      case "shape-input":
+    switch (totemLogic.values.state) {
+      case TOTEM_STATES.SHAPE_MAPPING:
         this.shapeMapper.handlePointerMove(e, { size: this.size });
         break;
-      case "color-input":
+      case TOTEM_STATES.COLOR_MAPPING:
         this.colorInput.handlePointerMove(e, { size: this.size });
         break;
-      case "feeling-input":
+      case TOTEM_STATES.FEELING_MAPPING:
         this.feelingMapper.handlePointerMove(e, { size: this.size });
         break;
     }
   }
 
   handlePointerDown(e) {
-    this._mapper.handlePointerDown(e);
-    switch (this._state) {
-      case "shape-input":
+    switch (totemLogic.values.state) {
+      case TOTEM_STATES.SHAPE_MAPPING:
         this.shapeMapper.handlePointerDown(e);
         break;
-      case "color-input":
+      case TOTEM_STATES.COLOR_MAPPING:
         this.colorInput.handlePointerDown(e);
         break;
-      case "feeling-input":
+      case TOTEM_STATES.FEELING_MAPPING:
         this.feelingMapper.handlePointerDown(e);
         break;
     }
@@ -432,25 +419,26 @@ class Totem extends THREE.Group {
         "data:text/json;charset=utf-8," +
         encodeURIComponent(JSON.stringify(gltf));
       downloadLink.href = dataStr;
-      downloadLink.download = `${md5(JSON.stringify(this.mapping))}.gltf`;
+      downloadLink.download = `${md5(
+        JSON.stringify(totemLogic.values.mappings)
+      )}.gltf`;
       document.body.append(downloadLink);
       downloadLink.click();
     });
   }
 
   handlePointerUp(e) {
-    this._mapper.handlePointerUp(e);
-    switch (this._state) {
-      case "shape-input":
+    switch (totemLogic.values.state) {
+      case TOTEM_STATES.SHAPE_MAPPING:
         this.shapeMapper.handlePointerUp(e);
         break;
-      case "color-input":
+      case TOTEM_STATES.COLOR_MAPPING:
         this.colorInput.handlePointerUp(e, {
           camera: this.camera,
           controls: this.controls,
         });
         break;
-      case "feeling-input":
+      case TOTEM_STATES.FEELING_MAPPING:
         this.feelingMapper.handlePointerUp(e, {
           camera: this.camera,
           controls: this.controls,
@@ -460,7 +448,6 @@ class Totem extends THREE.Group {
   }
 
   handleResize(e) {
-    console.log("RESIZE");
     const canvasWrapper = document.querySelector(".canvas-wrapper");
     if (canvasWrapper) {
       let newSize = canvasWrapper.getBoundingClientRect();
@@ -478,18 +465,17 @@ class Totem extends THREE.Group {
       this.size = newSize;
       // Update renderer
       this.renderer.setSize(newSize.width, newSize.height);
-      this._mapper.handleResize(this.camera.aspect);
     }
   }
 
-  _loadSounds() {
+  _loadSounds(mappingsArray) {
     // Audio
-    this.samplesFolder = `/assets/audio/audiovisio/`;
+    this.samplesFolder = `/assets/audio/samples/`;
     this._loadingManager = new THREE.LoadingManager();
     this.audioLoader = new THREE.AudioLoader(this._loadingManager);
     // Show audio sources
     const audioVisualizerCubes = [];
-    this.mapping.map((c, i) => {
+    mappingsArray.map((c, i) => {
       const sampleFilepath = `${this.samplesFolder}${c.sample}`;
       const positionalAudio = new THREE.PositionalAudio(this.listener);
       const analyser = new THREE.AudioAnalyser(positionalAudio, 32);
@@ -500,6 +486,7 @@ class Totem extends THREE.Group {
         positionalAudio.setVolume(0.7);
         this._sounds.push(positionalAudio);
         this.analysers.push(analyser);
+        totemLogic.actions.addSample(positionalAudio);
       });
     });
     return new Promise((resolve, reject) => {
@@ -510,7 +497,10 @@ class Totem extends THREE.Group {
           console.log("All sounds loaded");
           console.log(this._sounds);
           setTimeout(() => {
-            this._sounds.forEach((s) => s.play());
+            totemLogic.values.sounds.forEach((s) => s.play());
+            totemLogic.actions.setVolumes(
+              totemLogic.values.sounds.map((s) => s.getVolume())
+            );
             resolve();
           }, 2000);
         }
@@ -709,24 +699,35 @@ class Totem extends THREE.Group {
 
   _raycastLoop() {
     this._raycaster.setFromCamera(this._mousePosition, this.camera);
-    if (this._state === "shape-input") {
-      this._hit = this._raycaster.intersectObjects(
-        this.shapeMapper.raycastables
-      );
-      this.shapeMapper.handleRaycast(this._hit);
+
+    switch (totemLogic.values.state) {
+      case TOTEM_STATES.SHAPE_MAPPING:
+        this._hit = this._raycaster.intersectObjects(
+          this.shapeMapper.raycastables
+        );
+        this.shapeMapper.handleRaycast(this._hit);
+        break;
+
+      case TOTEM_STATES.COLOR_MAPPING:
+        this._hit = this._raycaster.intersectObjects(
+          this.colorInput.raycastables
+        );
+        this.colorInput.handleRaycast(this._hit, this.camera.position);
+        break;
+
+      case TOTEM_STATES.FEELING_MAPPING:
+        this._hit = this._raycaster.intersectObjects(
+          this.feelingMapper.raycastables
+        );
+        this.feelingMapper.handleRaycast(this._hit, this.camera.position);
+        break;
     }
-    if (this._state === "color-input") {
-      this._hit = this._raycaster.intersectObjects(
-        this.colorInput.raycastables
-      );
-      this.colorInput.handleRaycast(this._hit, this.camera.position);
-    }
-    if (this._state === "feeling-input") {
-      this._hit = this._raycaster.intersectObjects(
-        this.feelingMapper.raycastables
-      );
-      this.feelingMapper.handleRaycast(this._hit, this.camera.position);
-    }
+  }
+
+  update() {
+    this.renderer.clear();
+    this.renderer.render(this.backgroundPlane, this.backgroundCamera);
+    this.renderer.render(this.scene, this.camera);
   }
 
   _renderLoop() {
@@ -739,25 +740,27 @@ class Totem extends THREE.Group {
 
     this._raycastLoop();
 
-    if (this._state === "color-input") {
+    if (totemLogic.values.state === TOTEM_STATES.COLOR_MAPPING) {
       this.colorInput.update(this.deltaTime, {
         cameraPosition: this.camera.position,
       });
       this.renderer.render(this.colorInput.scene, this.camera);
     }
-    if (this._state === "shape-input") {
+
+    if (totemLogic.values.state === TOTEM_STATES.SHAPE_MAPPING) {
       this.shapeMapper.update(this.deltaTime);
       this.renderer.render(this.shapeMapper.scene, this.camera);
     }
-    if (this._state === "feeling-input") {
+
+    if (totemLogic.values.state === TOTEM_STATES.FEELING_MAPPING) {
       this.feelingMapper.update(this.deltaTime);
       this.renderer.render(this.feelingMapper.scene, this.camera);
     }
 
-    if (this._state === "totem") {
+    if (totemLogic.values.state === TOTEM_STATES.TOTEM) {
       if (!this._allLoaded) return;
       // Analyzers
-      if (this.mapping !== undefined) {
+      if (this.analysers !== undefined) {
         let analyzerValues = this.analysers.map((analyser, i) => {
           var data = analyser.getAverageFrequency();
           const val = remap(data, 0.0, 127.0, 0.1, 0.5);
@@ -809,10 +812,6 @@ class Totem extends THREE.Group {
             }
           });
         }
-
-        // this.renderer.setRenderTarget(this._audioDataRT);
-        // this.renderer.render(this._offscreenScene, this.backgroundCamera);
-        // this.renderer.setRenderTarget(null);
 
         if (this.tubeMesh) {
           this.tubeMesh.material.uniforms.uTime.value = this.time;

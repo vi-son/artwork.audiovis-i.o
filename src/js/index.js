@@ -8,7 +8,13 @@ import {
   useLocation,
   useHistory,
 } from "react-router-dom";
+import { useActions } from "kea";
+import totemLogic, { TOTEM_STATES } from "./artwork/logic.totem.js";
+import { Provider } from "react-redux";
+import { kea, useValues, resetContext, getContext } from "kea";
 import md5 from "blueimp-md5";
+import { Kontrol } from "@vi.son/components";
+import { ExhibitionLayout } from "@vi.son/components";
 import { Narrative } from "@vi.son/components";
 import { ButtonCloseNarrative } from "@vi.son/components";
 import { ButtonOpenNarrative } from "@vi.son/components";
@@ -18,21 +24,27 @@ import { ButtonDownloadRendering } from "@vi.son/components";
 import TotemUI from "./routes/TotemUI.js";
 import Intro from "./routes/Intro.js";
 import Flow from "./routes/Flow.js";
+import TotemRoute from "./routes/TotemRoute.js";
 import { get } from "./api.js";
 // Style imports
 import "@sass/index.sass";
+
+resetContext({
+  createStore: {},
+  plugins: [],
+});
 
 function useQuery() {
   return new URLSearchParams(useLocation().search);
 }
 
 const Artwork = () => {
-  const exampleMapping = require("../json/08f406489239afeddc1391e4125cf37b.json");
-
   const [showNarrative, setShowNarrative] = useState(false);
   const [content, setContent] = useState({});
   const [flowSelection, setFlowSelection] = useState("");
-  const [mapping, setMapping] = useState(exampleMapping);
+
+  const { setState } = useActions(totemLogic);
+  const { totem } = useValues(totemLogic);
 
   const history = useHistory();
   const query = useQuery();
@@ -57,108 +69,120 @@ const Artwork = () => {
     });
   }, []);
 
-  return (
-    <>
-      <h1>{JSON.stringify(flowSelection)}</h1>
-      <div className="artwork">
-        <TotemUI
-          mapping={mapping}
-          paused={showNarrative}
-          state={query.get("state")}
-          onSelect={(s) => setFlowSelection(s)}
-        />
-      </div>
+  useEffect(() => {
+    // switch (history.location.pathname) {
+    //   case `/`:
+    //     setState(TOTEM_STATES.INIT);
+    //     break;
+    //   case `/totem`:
+    //     setState(TOTEM_STATES.TOTEM);
+    //     break;
+    // }
+  }, [history]);
 
-      <div>
+  useEffect(() => {
+    if (totem) {
+      showNarrative ? totem.pause() : totem.continue();
+    }
+  }, [showNarrative]);
+
+  return (
+    <ExhibitionLayout
+      showAside={showNarrative}
+      fixed={
+        <>
+          <TotemUI paused={showNarrative} />
+        </>
+      }
+      content={
         <Switch>
           <Route path="/flow">
             <div className="ui">
-              <Flow
-                selection={flowSelection}
-                onFinish={(mapping) => {
-                  setMapping(mapping);
-                  history.push("/end?state=totem");
-                }}
-                onClear={() => setFlowSelection("")}
-              />
-              <ButtonOpenNarrative
-                showNarrative={showNarrative}
-                setShowNarrative={setShowNarrative}
-              />
+              <Flow />
             </div>
           </Route>
-          <Route path="/end">
+
+          <Route path="/totem">
+            <TotemRoute />
+            <ButtonOpenNarrative
+              showNarrative={showNarrative}
+              setShowNarrative={setShowNarrative}
+            />
             <div className="ui">
               <div className="mapping-actions">
-                <button
-                  className="btn-download-json"
-                  onClick={prepareDownloadJSON}
-                >
-                  <span className="emoji">💾</span>{" "}
-                  <span className="text">Download</span>
-                </button>
-                <div className="upload-json">
-                  <label className="btn-upload-json" htmlFor="mapping">
-                    <span className="emoji">📂</span>{" "}
-                    <span className="text">Upload</span>
-                  </label>
-                  <input
-                    className="input"
-                    type="file"
-                    id="mapping"
-                    onChange={(e) => {
-                      const fileReader = new FileReader();
-                      const lastFile =
-                        e.target.files[e.target.files.length - 1];
-                      fileReader.readAsText(lastFile);
-                      fileReader.addEventListener("load", () => {
-                        const data = JSON.parse(fileReader.result);
-                        console.log(data);
-                        setMapping(data);
-                      });
-                    }}
-                  />
-                </div>
+                {/* <button */}
+                {/*   className="btn-download-json" */}
+                {/*   onClick={prepareDownloadJSON} */}
+                {/* > */}
+                {/*   <span className="emoji">💾</span>{" "} */}
+                {/*   <span className="text">Download</span> */}
+                {/* </button> */}
+
+                {/* <div className="upload-json"> */}
+                {/*   <label className="btn-upload-json" htmlFor="mapping"> */}
+                {/*     <span className="emoji">📂</span>{" "} */}
+                {/*     <span className="text">Upload</span> */}
+                {/*   </label> */}
+                {/*   <input */}
+                {/*     className="input" */}
+                {/*     type="file" */}
+                {/*     id="mapping" */}
+                {/*     onChange={(e) => { */}
+                {/*       const fileReader = new FileReader(); */}
+                {/*       const lastFile = */}
+                {/*         e.target.files[e.target.files.length - 1]; */}
+                {/*       fileReader.readAsText(lastFile); */}
+                {/*       fileReader.addEventListener("load", () => { */}
+                {/*         const data = JSON.parse(fileReader.result); */}
+                {/*         console.log(data); */}
+                {/*         setMapping(data); */}
+                {/*       }); */}
+                {/*     }} */}
+                {/*   /> */}
+                {/* </div> */}
               </div>
-              <ButtonOpenNarrative
-                showNarrative={showNarrative}
-                setShowNarrative={setShowNarrative}
-              />
-              <button className="btn-restart" onClick={() => history.push("/")}>
-                Nochmal
-              </button>
-              <ButtonDownloadRendering
-                canvasRef={document.querySelector(".canvas")}
-              />
-              <ButtonToExhibition />
+
+              {/* <button className="btn-restart" onClick={() => history.push("/")}> */}
+              {/*    Nochmal */}
+              {/* </button> */}
             </div>
           </Route>
+
           <Route path="/">
             <div className="ui">
               <Intro />
               <ButtonToExhibition />
+              <ButtonOpenNarrative
+                showNarrative={showNarrative}
+                setShowNarrative={setShowNarrative}
+              />
             </div>
           </Route>
         </Switch>
-      </div>
-
-      <ButtonCloseNarrative
-        showNarrative={showNarrative}
-        setShowNarrative={setShowNarrative}
-      />
-      <Narrative
-        show={showNarrative}
-        version={process.env.VERSION}
-        content={content}
-      />
-    </>
+      }
+      aside={
+        <>
+          <ButtonCloseNarrative
+            showNarrative={showNarrative}
+            setShowNarrative={setShowNarrative}
+          />
+          <Narrative
+            show={showNarrative}
+            version={process.env.VERSION}
+            content={content}
+          />
+        </>
+      }
+    />
   );
 };
 
 const mount = document.querySelector("#mount");
 ReactDOM.render(
   <Router>
-    <Artwork />
+    <Provider store={getContext().store}>
+      <Artwork />
+    </Provider>
   </Router>,
   mount
 );

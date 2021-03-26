@@ -1,14 +1,18 @@
 // node_modules imports
 import * as THREE from "three";
 import TWEEN from "@tweenjs/tween.js";
+// Local imports
+import totemLogic, { MAPPINGS } from "../logic.totem.js";
 // GLSL imports
-import vertexShader from "../../glsl/colorcube.vert.glsl";
-import fragmentShader from "../../glsl/colorcube.frag.glsl";
+import vertexShader from "../../../glsl/colorcube.vert.glsl";
+import fragmentShader from "../../../glsl/colorcube.frag.glsl";
 
 class ColorMapper {
-  constructor(renderer, onSelect) {
+  constructor() {
     this._scene = new THREE.Scene();
-    this._onSelect = onSelect;
+    this._onSelect = (type, mapping) => {
+      totemLogic.actions.mapCurrentSampleTo(type, mapping);
+    };
 
     // Geometry
     const geometry = new THREE.BoxGeometry(1, 1, 1);
@@ -121,7 +125,7 @@ class ColorMapper {
     const green = Math.round((this._raycastHit[0].point.y + 1) * 128);
     const blue = Math.round((this._raycastHit[0].point.z + 1) * 128);
     this._cursor.material.color.fromArray([red, green, blue]);
-    this._onSelect({ type: "color", mapping: [red, green, blue] });
+    this._onSelect(MAPPINGS.COLOR, [red, green, blue]);
     // Tween the camera
     const normal = this._raycastHit[0].point
       .clone()

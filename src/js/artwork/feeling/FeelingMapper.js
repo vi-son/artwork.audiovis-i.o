@@ -1,15 +1,20 @@
 import * as THREE from "three";
 import TWEEN from "@tweenjs/tween.js";
+// Local imports
+import totemLogic, { MAPPINGS } from "../logic.totem.js";
 
 class FeelingMapper {
-  constructor(onSelect) {
+  constructor() {
     this._scene = new THREE.Scene();
     this._root = new THREE.Object3D();
 
-    this._highlightColor = new THREE.Color(0x2b13ff);
+    this._highlightColor = new THREE.Color(0x060609);
     this._defaultColor = new THREE.Color(0x7a7a7a);
 
-    this._onSelect = onSelect;
+    this._onSelect = (type, mapping) => {
+      totemLogic.actions.mapCurrentSampleTo(type, mapping);
+    };
+    this._onHover = () => {};
 
     // Light
     var light = new THREE.HemisphereLight(0xffffff, 0x666666, 1.0);
@@ -103,6 +108,7 @@ class FeelingMapper {
       const faceMaterial = material.clone();
       faceMaterial.color.set(row[0].color);
       const mesh = new THREE.Mesh(geometry, faceMaterial);
+      mesh._defaultColor = row[0].color;
       this._root.add(mesh);
       this._feelingMap.set(mesh.id, row[0].text);
       row.slice(1).map((f, j) => {
@@ -134,6 +140,7 @@ class FeelingMapper {
         const faceMaterial = material.clone();
         faceMaterial.color.set(f.color);
         const mesh = new THREE.Mesh(geometry, faceMaterial);
+        mesh._defaultColor = f.color;
         this._root.add(mesh);
         this._feelingMap.set(mesh.id, f.text);
         prevY = v;
@@ -168,30 +175,15 @@ class FeelingMapper {
   }
 
   update(deltaTime) {
-    this._root.children.forEach((obj) => {
-      // new TWEEN.Tween(obj.material.color)
-      //   .to(
-      //     {
-      //       r: this._defaultColor.r,
-      //       g: this._defaultColor.g,
-      //       b: this._defaultColor.b,
-      //     },
-      //     300
-      //   )
-      //   .start();
-    });
     if (this._raycastHit.length > 0) {
       const { object } = this._raycastHit[0];
-      // new TWEEN.Tween(object.material.color)
-      //   .to(
-      //     {
-      //       r: this._highlightColor.r,
-      //       g: this._highlightColor.g,
-      //       b: this._highlightColor.b,
-      //     },
-      //     300
-      //   )
-      //   .start();
+      this._onHover(this._feelingMap.get(object.id));
+      object.material.color.set(this._highlightColor);
+      this._root.children.forEach((obj) => {
+        if (obj.id !== this._raycastHit[0].object.id) {
+          obj.material.color.set(obj._defaultColor);
+        }
+      });
     }
   }
 
@@ -235,12 +227,9 @@ class FeelingMapper {
       controls.update();
       const { id } = this._raycastHit[0].object;
       this._selectedId = id;
-      this._onSelect({
-        type: "feeling",
-        mapping: {
-          feeling: this._feelingMap.get(this._selectedId),
-          point: this._raycastHit[0].point,
-        },
+      this._onSelect(MAPPINGS.FEELING, {
+        feeling: this._feelingMap.get(this._selectedId),
+        point: this._raycastHit[0].point,
       });
     }
   }

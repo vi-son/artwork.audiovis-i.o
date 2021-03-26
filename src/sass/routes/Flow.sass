@@ -7,7 +7,6 @@
   display: grid
   height: 100vh
   width: 100vw
-  pointer-events: none
   grid-template-rows: 1fr 120px
 
   .button-wrapper
@@ -95,28 +94,35 @@
   .mapping-debug
     font-family: Monospace
     position: fixed
-    left: 0
-    top: 80px
+    left: 10px
+    top: 70px
     z-index: 999
     background: var(--color-ultradark)
-    max-width: 90ch
     color: var(--color-snow)
-    font-size: 0.9rem
-    padding: 5px
-    word-wrap: break-word
-    font-size: 0.8em
+    font-size: 0.75rem
+    padding: 10px
+    display: grid
+    grid-template-columns: 20ch 1fr
+    grid-gap: 5px
     .current-mapping
       display: flex
       flex-direction: column
     hr
       opacity: 0.2
-      margin: 2px 0
+      grid-column: span 2
     *
       color: var(--color-snow)
     .mapping
+      grid-column: span 2
       display: flex
       flex-direction: column
       margin-bottom: 2px
+      display: grid
+      grid-template-columns: 20ch 1fr
+      grid-gap: 6px
+      .group
+        font-size: 1.5rem
+        grid-column: span 2
 
   .mapping-selection
     display: grid
