@@ -37,7 +37,6 @@ class Totem extends THREE.Group {
     this._canvas = canvas;
     this._exporter = new GLTFExporter();
     this._paused = false;
-    this._sounds = [];
     this._allLoaded = false;
 
     // Render Targets
@@ -109,16 +108,24 @@ class Totem extends THREE.Group {
   pause() {
     this.renderer.setAnimationLoop(null);
     this.clock.stop();
-    totemLogic.values.sounds.forEach((s) => s.setVolume(0.0));
-    totemLogic.actions.updateSamples(totemLogic.values.sounds);
+    totemLogic.actions.updateSamples(
+      totemLogic.values.sounds.map((s) => {
+        s.setVolume(0.0);
+        return s;
+      })
+    );
     this._paused = true;
   }
 
   continue() {
     this.renderer.setAnimationLoop(this._renderLoop.bind(this));
     this.clock.start();
-    totemLogic.values.sounds.forEach((s) => s.setVolume(1.0));
-    totemLogic.actions.updateSamples(totemLogic.values.sounds);
+    totemLogic.actions.updateSamples(
+      totemLogic.values.sounds.map((s) => {
+        s.setVolume(1.0);
+        return s;
+      })
+    );
     this._paused = false;
   }
 
@@ -132,16 +139,18 @@ class Totem extends THREE.Group {
     while (this.totem.children.length > 0) {
       this.totem.remove(this.totem.children.slice(-1).pop());
     }
-    this._sounds.map((s) => {
+    totemLogic.values.sounds.map((s) => {
       s.pause();
     });
-    this._sounds.splice(0, this._sounds.length);
-    this.analysers.splice(0, this.analysers.length);
+    totemLogic.actions.clearSamples();
+    totemLogic.actions.clearMappings();
+    this.analysers = new Array();
   }
 
   reactOnMappings() {
     console.log("Mappings: ", Object.values(totemLogic.values.mappings));
     const mappingsArray = Object.values(totemLogic.values.mappings);
+    console.log("Sounds: ", totemLogic.values.sounds);
     // Mappings
     this._setupMappings(mappingsArray);
     this._setupTube(mappingsArray);
@@ -152,7 +161,6 @@ class Totem extends THREE.Group {
   }
 
   reactOnStateChange() {
-    this._sounds.forEach((s) => s.pause());
     switch (totemLogic.values.state) {
       case TOTEM_STATES.SHAPE_MAPPING:
         this.controls.reset();
@@ -474,6 +482,7 @@ class Totem extends THREE.Group {
     this._loadingManager = new THREE.LoadingManager();
     this.audioLoader = new THREE.AudioLoader(this._loadingManager);
     // Show audio sources
+    this.analysers = [];
     const audioVisualizerCubes = [];
     mappingsArray.map((c, i) => {
       const sampleFilepath = `${this.samplesFolder}${c.sample}`;
@@ -484,28 +493,20 @@ class Totem extends THREE.Group {
         positionalAudio.setBuffer(buffer);
         positionalAudio.setLoop(true);
         positionalAudio.setVolume(0.7);
-        this._sounds.push(positionalAudio);
         this.analysers.push(analyser);
         totemLogic.actions.addSample(positionalAudio);
       });
     });
-    return new Promise((resolve, reject) => {
-      this._loadingManager.onProgress = (url, itemsLoaded, itemsTotal) => {
-        console.log(itemsLoaded, itemsTotal);
-        if (itemsLoaded / itemsTotal === 1.0) {
-          this._allLoaded = true;
-          console.log("All sounds loaded");
-          console.log(this._sounds);
-          setTimeout(() => {
-            totemLogic.values.sounds.forEach((s) => s.play());
-            totemLogic.actions.setVolumes(
-              totemLogic.values.sounds.map((s) => s.getVolume())
-            );
-            resolve();
-          }, 2000);
-        }
-      };
-    });
+    this._loadingManager.onProgress = (url, itemsLoaded, itemsTotal) => {
+      if (itemsLoaded / itemsTotal === 1.0) {
+        this._allLoaded = true;
+        console.log("All sounds loaded: ");
+        console.log(totemLogic.values.sounds);
+        totemLogic.actions.setVolumes(
+          totemLogic.values.sounds.map((s) => s.getVolume())
+        );
+      }
+    };
   }
 
   _setupMaterialSphere() {

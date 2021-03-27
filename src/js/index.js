@@ -21,7 +21,7 @@ import { ButtonOpenNarrative } from "@vi.son/components";
 import { ButtonToExhibition } from "@vi.son/components";
 import { ButtonDownloadRendering } from "@vi.son/components";
 // Local imports
-import TotemUI from "./routes/TotemUI.js";
+import ArtworkContainer from "./artwork/ArtworkContainer.js";
 import Intro from "./routes/Intro.js";
 import Flow from "./routes/Flow.js";
 import TotemRoute from "./routes/TotemRoute.js";
@@ -70,17 +70,6 @@ const Artwork = () => {
   }, []);
 
   useEffect(() => {
-    // switch (history.location.pathname) {
-    //   case `/`:
-    //     setState(TOTEM_STATES.INIT);
-    //     break;
-    //   case `/totem`:
-    //     setState(TOTEM_STATES.TOTEM);
-    //     break;
-    // }
-  }, [history]);
-
-  useEffect(() => {
     if (totem) {
       showNarrative ? totem.pause() : totem.continue();
     }
@@ -91,7 +80,7 @@ const Artwork = () => {
       showAside={showNarrative}
       fixed={
         <>
-          <TotemUI paused={showNarrative} />
+          <ArtworkContainer paused={showNarrative} />
         </>
       }
       content={

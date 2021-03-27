@@ -30,6 +30,7 @@ const totemLogic = kea({
     addSample: (sample) => ({ sample }),
     removeSample: (sample) => ({ sample }),
     updateSamples: (samples) => ({ samples }),
+    clearSamples: () => true,
 
     setVolumes: (volumes) => ({ volumes }),
 
@@ -38,6 +39,7 @@ const totemLogic = kea({
     clearCurrentMapping: () => true,
 
     storeMapping: (mapping) => ({ mapping }),
+    clearMappings: () => true,
   },
 
   reducers: {
@@ -102,6 +104,7 @@ const totemLogic = kea({
           console.log(newMappings);
           return newMappings;
         },
+        clearMappings: (mappings) => ({}),
       },
     ],
 
@@ -111,6 +114,10 @@ const totemLogic = kea({
         addSample: (samples, { sample }) => [...samples, sample],
         removeSample: (samples, { sample }) => samples,
         updateSamples: (_, { samples }) => [...samples],
+        clearSamples: (samples) => {
+          samples.map((s) => s.pause());
+          return samples.splice(0, samples.length);
+        },
       },
     ],
 
@@ -122,6 +129,14 @@ const totemLogic = kea({
       console.log("STATE CHANGE", values.state);
       if (values.totem) {
         values.totem.reactOnStateChange();
+      }
+    },
+
+    addSample: ({ sample }) => {
+      console.log(sample);
+      console.log(values.sounds);
+      if (values.sounds.length >= 5) {
+        values.sounds.forEach((s) => s.play());
       }
     },
 
