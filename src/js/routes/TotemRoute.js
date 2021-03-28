@@ -69,13 +69,13 @@ const TotemRoute = () => {
       label: "weiter",
       action: () => totem.continue(),
     },
-    divider: { type: "divider" },
-    sound1: {
-      icon: "",
-      type: "button",
-      label: "sound",
-      action: () => {},
-    },
+    // divider: { type: "divider" },
+    // sound1: {
+    //   icon: "",
+    //   type: "button",
+    //   label: "sound",
+    //   action: () => {},
+    // },
   };
 
   return (
@@ -103,11 +103,11 @@ const TotemRoute = () => {
       {/* </div> */}
       <div>
         <Kontrol config={kontrolConfig}>
-          <div className="samples">
-            {sounds.map((v, i) => {
-              return <SoundUI key={i} index={i} volume={0.0} />;
-            })}
-          </div>
+          {/* <div className="samples"> */}
+          {/*   {sounds.map((v, i) => { */}
+          {/*     return <SoundUI key={i} index={i} volume={0.0} />; */}
+          {/*   })} */}
+          {/* </div> */}
         </Kontrol>
       </div>
       <ButtonEmoji

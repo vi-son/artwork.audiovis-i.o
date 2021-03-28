@@ -100,9 +100,11 @@ class Totem extends THREE.Group {
     );
 
     // Stats
-    this.stats = new Stats();
-    this.stats.dom.className = "stats";
-    document.body.appendChild(this.stats.dom);
+    if (process.env.NODE_ENV === "development") {
+      this.stats = new Stats();
+      this.stats.dom.className = "stats";
+      document.body.appendChild(this.stats.dom);
+    }
   }
 
   pause() {
@@ -153,12 +155,12 @@ class Totem extends THREE.Group {
     const mappingsArray = Object.values(totemLogic.values.mappings);
     console.log("Sounds: ", totemLogic.values.sounds);
     // Mappings
+    this._loadSounds(mappingsArray);
     this._setupMappings(mappingsArray);
     this._setupTube(mappingsArray);
     this._mapFeelings(mappingsArray);
     this._mapShapes(mappingsArray);
     this._mapColors(mappingsArray);
-    this._loadSounds(mappingsArray);
   }
 
   reactOnStateChange() {
@@ -482,22 +484,29 @@ class Totem extends THREE.Group {
     // Audio
     this.samplesFolder = `/assets/audio/samples/`;
     this._loadingManager = new THREE.LoadingManager();
-    this.audioLoader = new THREE.AudioLoader(this._loadingManager);
     // Show audio sources
     this.analysers = [];
     const audioVisualizerCubes = [];
     mappingsArray.map((c, i) => {
-      const sampleFilepath = `${this.samplesFolder}${c.sample}`;
       const positionalAudio = new THREE.PositionalAudio(this.listener);
       const analyser = new THREE.AudioAnalyser(positionalAudio, 32);
       analyser.smoothingTimeConstant = 0.9;
-      this.audioLoader.load(sampleFilepath, (buffer) => {
-        positionalAudio.setBuffer(buffer);
-        positionalAudio.setLoop(true);
-        positionalAudio.setVolume(0.7);
-        this.analysers.push(analyser);
-        totemLogic.actions.addSample(positionalAudio);
-      });
+      new THREE.AudioLoader(this._loadingManager)
+        .setPath(this.samplesFolder)
+        .load(
+          c.sample,
+          (buffer) => {
+            positionalAudio.setBuffer(buffer);
+            positionalAudio.setLoop(true);
+            positionalAudio.setVolume(0.7);
+            this.analysers.push(analyser);
+            totemLogic.actions.addSample(positionalAudio);
+          },
+          (xhr) => {},
+          (err) => {
+            console.error("Error while loading sound ", err);
+          }
+        );
     });
     this._loadingManager.onProgress = (url, itemsLoaded, itemsTotal) => {
       if (itemsLoaded / itemsTotal === 1.0) {
@@ -508,6 +517,9 @@ class Totem extends THREE.Group {
           totemLogic.values.sounds.map((s) => s.getVolume())
         );
       }
+    };
+    this._loadingManager.onError = (url) => {
+      console.error(`Error while loading ${url}`);
     };
   }
 
