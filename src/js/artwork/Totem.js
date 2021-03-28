@@ -108,13 +108,6 @@ class Totem extends THREE.Group {
 
     // Loading infrastructure
     this._samplesFolder = `/assets/audio/samples/`;
-    this._loadingManager = new THREE.LoadingManager();
-    this._audioLoader = new THREE.AudioLoader(this._loadingManager);
-    this._audioLoader
-      .setPath(this._samplesFolder)
-      .load("/bass/montez-sample-06-synth-bass-02.mp3", () => {
-        console.log("Loading first sound...");
-      });
   }
 
   pause() {
@@ -171,6 +164,7 @@ class Totem extends THREE.Group {
     this._mapFeelings(mappingsArray);
     this._mapShapes(mappingsArray);
     this._mapColors(mappingsArray);
+    this._allLoaded = true;
   }
 
   reactOnStateChange() {
@@ -503,8 +497,9 @@ class Totem extends THREE.Group {
       this.analysers.push(analyser);
       return audio;
     });
+    let audioCounter = 0;
     mappingsArray.map((c, i) => {
-      this._audioLoader.setPath(this._samplesFolder).load(
+      new THREE.AudioLoader().setPath(this._samplesFolder).load(
         c.sample,
         (buffer) => {
           this.positionalAudios[i].setBuffer(buffer);
@@ -512,26 +507,12 @@ class Totem extends THREE.Group {
           this.positionalAudios[i].setVolume(0.7);
           // Save audio
           totemLogic.actions.addSample(this.positionalAudios[i]);
+          audioCounter++;
         },
         (xhr) => {},
         (err) => console.error("Error while loading sound ", err)
       );
     });
-
-    // Finished loading
-    this._loadingManager.onLoad = () => {
-      this._allLoaded = true;
-      console.log("All sounds loaded... playing", this.positionalAudios);
-      this.positionalAudios.forEach((pa, i) => {});
-    };
-
-    this._loadingManager.onProgress = (url, loaded, total) => {
-      console.log((loaded / total) * 100 + "% loaded");
-    };
-
-    this._loadingManager.onError = (url) => {
-      console.error(`Error while loading ${url}`);
-    };
   }
 
   _setupMaterialSphere() {
