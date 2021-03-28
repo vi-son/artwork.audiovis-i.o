@@ -52,7 +52,7 @@ const TotemRoute = () => {
         totem.pause();
         setTimeout(() => {
           utils
-            .downloadRendering(canvasRef.current)
+            .downloadRendering(document.querySelector("canvas"))
             .then(() => totem.continue());
         }, 100);
       },
