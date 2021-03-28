@@ -1,34 +1,60 @@
 @import @vi.son/rouge/1-settings/_colors.sass
+@import @vi.son/rouge/1-settings/_typograhpy.sass
+@import @vi.son/rouge/1-settings/_breakpoints.sass
+@import @vi.son/rouge/2-tools/_media-queries.sass
+
+$bar-height: 10px
 
 .progressbar
   display: flex
   position: fixed
-  bottom: 0
+  top: 0
   flex-direction: column
   justify-content: space-between
   color: var(--color-darkness)
-  .completed-text-wrapper
-    width: calc(100vw - 2 * 40px)
-    margin-left: 40px
-  .completed-text
-    font-weight: 300
-    max-width: calc(100vw - 80px)
-    display: flex
-    padding: 10px
-    justify-content: flex-end
-    transition: width 500ms ease
-    .divider
-      color: var(--color-curacao)
-      margin: 0 3px
-      font-weight: bold
+
   .bar
-    height: 30px
+    +until($tablets)
+      height: $bar-height / 2
+    height: $bar-height
     width: 100vw
-    background: var(--color-darkness-30)
+    background: var(--color-ultradark-30)
     position: relative
     .completed
       position: absolute
       width: 0
-      height: 30px
-      background: var(--color-ultradark-30)
+      height: $bar-height
+      background: var(--color-curacao)
       transition: width 500ms ease
+
+  .completed-text-wrapper
+    width: calc(100vw - 2 * 40px)
+    margin: 0 auto
+    display: flex
+    justify-content: center
+    margin-top: 8px
+    +from($tablets)
+      margin-top: 20px
+
+  .completed-text
+    font-weight: 300
+    max-width: calc(100vw - 80px)
+    display: flex
+    flex-direction: column
+    align-items: center
+    justify-content: flex-end
+    transition: width 500ms ease
+
+    .static-title
+      font-family: Space Mono
+      font-weight: bold
+      font-size: 0.85rem
+      text-transform: uppercase
+      margin-bottom: 7px
+      +from($tablets)
+        margin-bottom: 15px
+
+    .divider
+      color: var(--color-curacao)
+      margin: 0 3px
+      font-weight: bold

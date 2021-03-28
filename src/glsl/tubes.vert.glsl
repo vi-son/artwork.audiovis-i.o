@@ -22,6 +22,8 @@ uniform int uStopCount;
 uniform float uAnalysers[5];
 uniform int uAnalyserOffset;
 
+uniform sampler2D uAudioDataTexture;
+
 varying vec2 vUv;
 varying vec3 vViewPosition;
 varying vec3 vNormal;
@@ -61,9 +63,14 @@ vec3 sample (float t) {
   float x = t;
   float y = 0.01;
   float z = 0.01;
-  float intense = mix(uAnalysers[0], uAnalysers[4], t);
+
+  // Dancing movement
   i.z = sin(t * PI + end.z * 3.0 + uTime * 1.75) / 5.0;
   i.x = sin(t * PI + end.x * 3.0 + uTime * 1.95) / 5.0;
+
+  // No dancing movement
+  // i.z = 0.01; //sin(t * PI + end.z * 3.0) / 5.0;
+  // i.x = 0.01; //sin(t * PI + end.x * 3.0) / 5.0;
   return i;
 }
 
@@ -107,6 +114,8 @@ void main() {
 
   vec4 mvPosition = modelViewMatrix * vec4(transformed, 1.0);
   vViewPosition = vec3(t, 0, 0);
+
+  
 
   gl_Position = projectionMatrix * mvPosition;
 }

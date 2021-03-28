@@ -1,6 +1,30 @@
 #pragma glslify: pillow = require(./pillow)
 
-uniform float uAnalyzer;
+uniform vec3 uColor;
+
+vec3 hsb_2_rgb(in vec3 c){
+  vec3 rgb = clamp(abs(mod(c.x*6.0+vec3(0.0,4.0,2.0),
+                           6.0)-3.0)-1.0,
+                   0.0,
+                   1.0 );
+  rgb = rgb*rgb*(3.0-2.0*rgb);
+  return c.z * mix(vec3(1.0), rgb, c.y);
+}
+
+vec3 rgb_2_hsv(in vec3 rgb) {
+  vec4 k = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
+  vec4 p = mix(vec4(rgb.bg, k.wz),
+               vec4(rgb.gb, k.xy),
+               step(rgb.b, rgb.g));
+  vec4 q = mix(vec4(p.xyw, rgb.r),
+               vec4(rgb.r, p.yzw),
+               step(p.x, rgb.r));
+  float d = q.x - min(q.w, q.y);
+  float e = 1.0e-10;
+  return vec3(abs(q.z + (q.w - q.y) / (6.0 * d + e)),
+              d / (q.x + e),
+              q.x);
+}
 
 float rand(vec2 n) { 
 	return fract(sin(dot(n, vec2(12.9898, 4.1414))) * 43758.5453);
@@ -23,8 +47,10 @@ void main() {
   vec2 uv = gl_FragCoord.xy / uResolution;
   vec3 color = vec3(0.0);
 
-  vec4 color_a = vec4(105.0 / 255.0, 108.0 / 255.0, 112.0 / 255.0, 1.0); // - (uAnalyzer / 2.0);
-  vec4 color_b = vec4(144.0 / 255.0, 150.0 / 255.0, 154.0 / 255.0, 1.0); // + (uAnalyzer / 4.0);
+  vec3 colorHsv = rgb_2_hsv(uColor);
+  colorHsv.z -= 0.3;
+  vec4 color_a = vec4(hsb_2_rgb(colorHsv), 1.0);
+  vec4 color_b = vec4(uColor, 1.0);
 
   vec2 gamma = vec2(6.0);
   

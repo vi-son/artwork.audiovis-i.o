@@ -1,94 +1,49 @@
 // node_modules imports
 import React, { useRef, useState, useEffect } from "react";
-import { Link, withRouter } from "react-router-dom";
+import { Link, withRouter, useHistory } from "react-router-dom";
+import { useValues, useActions } from "kea";
+import { utils } from "@vi.son/components";
+const { mobileCheck } = utils;
 // Local imports
-import Layout from "../Layout.js";
-import AudioPlayer from "../components/AudioPlayer.js";
-import SelectBox from "../components/SelectBox.js";
-import ColorInput from "../components/ColorInput.js";
-import FeelingsInput from "../components/FeelingsInput.js";
-import ShapeInput from "../components/ShapeInput.js";
+import totemLogic from "../artwork/logic.totem.js";
+import { TOTEM_STATES } from "../artwork/logic.totem.js";
+import AudioPlayer, { playerLogic } from "../components/AudioPlayer.js";
 import Progressbar from "../components/Progressbar.js";
 // SVG imports
 import IconColor from "../../../assets/svg/audiovisio/color.svg";
 import IconFeeling from "../../../assets/svg/audiovisio/feeling.svg";
 import IconShape from "../../../assets/svg/audiovisio/shape.svg";
+// Utils
+import { getRandomInt } from "../utils.js";
 // Style imports
 import "../../sass/routes/Flow.sass";
-
-function getRandomInt(min, max) {
-  min = Math.ceil(min);
-  max = Math.floor(max);
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-}
 
 class Flow extends React.Component {
   constructor(props) {
     super(props);
     this.fadeDuration = 100;
 
-    this.audioPlayerRef = React.createRef();
+    this._isMobile = mobileCheck();
+
     this.selectBoxRef = React.createRef();
 
     const groupSamples = new Map();
-    groupSamples.set("synthesizer", [
-      "05-synthesizer/montez-sample-01-lead-synth.mp3",
-      "05-synthesizer/montez-sample-19-lead-synth-02.mp3"
-    ]);
-
-    groupSamples.set("guitar", [
-      "03-guitar/montez-sample-02-main-git.mp3",
-      "03-guitar/montez-sample-17-arp-git.mp3",
-      "03-guitar/montez-sample-22-wah-git.mp3",
-      "03-guitar/montez-sample-23-chords-git.mp3",
-      "03-guitar/montez-sample-25-somh-git.mp3"
-    ]);
-
-    groupSamples.set("chords", [
-      "02-chords/montez-sample-03-pad-01.mp3",
-      "02-chords/montez-sample-04-pad-02.mp3",
-      "02-chords/montez-sample-05-pad-03.mp3",
-      "02-chords/montez-sample-14-keys-01.mp3",
-      "02-chords/montez-sample-16-keys-02.mp3",
-      "02-chords/montez-sample-21-keys-03.mp3"
-    ]);
-
-    groupSamples.set("bass", [
-      "01-bass/montez-sample-06-synth-bass-02.mp3",
-      "01-bass/montez-sample-07-synth-bass-01.mp3",
-      "01-bass/montez-sample-18-e-bass-01.mp3",
-      "01-bass/montez-sample-20-e-bass-02.mp3"
-    ]);
-
-    groupSamples.set("rhythm", [
-      "04-rhythm/montez-sample-08-e-perc-01.mp3",
-      "04-rhythm/montez-sample-09-e-perc-02.mp3",
-      "04-rhythm/montez-sample-10-e-drums-01.mp3",
-      "04-rhythm/montez-sample-11-shaker.mp3",
-      "04-rhythm/montez-sample-12-toms.mp3",
-      "04-rhythm/montez-sample-13-hh.mp3",
-      "04-rhythm/montez-sample-24-e-perc-03.mp3"
-    ]);
-
-    this.groups = ["synthesizer", "guitar", "chords", "bass", "rhythm"];
+    Object.keys(process.env.SAMPLES).forEach((group) => {
+      groupSamples.set(group, process.env.SAMPLES[group]);
+    });
+    const groups = Object.keys(process.env.SAMPLES);
 
     this.state = {
+      showDebug: false,
       selectedIdx: -1,
       initialized: false,
-      groups: this.groups,
+      groups: groups,
       scenarioCount: 5,
       completedCount: 0,
       isColorReactive: false,
       backgroundColor: "var(--color-snow)",
       groupSamples: groupSamples,
-      unmappedGroups: Array.from(this.groups.values()),
-      currentMapping: {
-        sample: undefined,
-        group: undefined,
-        type: undefined,
-        mapping: undefined
-      },
-      mappings: []
+      unmappedGroups: Array.from(groups.values()),
     };
 
     this.prepareNextScenario = this.prepareNextScenario.bind(this);
@@ -96,8 +51,9 @@ class Flow extends React.Component {
   }
 
   prepareNextScenario() {
-    if (this.state.completedCount === this.state.scenarioCount) {
-      this.props.onFinish(this.state.mappings, this.props.history);
+    if (this.state.completedCount + 1 === this.state.scenarioCount) {
+      this.props.audio.pause();
+      this.props.history.push("/totem");
       return;
     }
     this.setState({ backgroundColor: "var(--color-snow)" });
@@ -110,25 +66,21 @@ class Flow extends React.Component {
     const randomSampleIdx = getRandomInt(0, availableSamples.length - 1);
     const selectedSample = availableSamples[randomSampleIdx];
     this.setState({
-      currentMapping: Object.assign({}, this.state.currentMapping, {
-        sample: selectedSample,
-        group: selectedGroup,
-        type: undefined,
-        mapping: undefined
-      }),
       unmappedGroups: this.state.unmappedGroups.filter(
-        e => e !== selectedGroup
+        (e) => e !== selectedGroup
       ),
-      initialized: true
+      initialized: true,
     });
+    this.actions.setCurrentSample(selectedGroup, selectedSample);
     if (this.selectBoxRef.current) this.selectBoxRef.current.init();
   }
 
   moveToNextScenario() {
+    this.actions.storeMapping(this.props.currentMapping);
     this.setState({
-      mappings: [...this.state.mappings, ...[this.state.currentMapping]],
-      completedCount: this.state.completedCount + 1
+      completedCount: this.state.completedCount + 1,
     });
+    this.actions.clearCurrentMapping();
     this.prepareNextScenario();
   }
 
@@ -141,185 +93,190 @@ class Flow extends React.Component {
       return <></>;
     }
     const mappingDebug = (
-      <div className="mapping-debug">
-        <span>{this.state.completedCount}</span>
-        <br />
-        <span>{this.state.currentMapping.type}</span>
-        <span>{JSON.stringify(this.state.currentMapping.mapping)}</span>
-        <hr />
-        <h5>Scenario count: {this.state.scenarioCount}</h5>
-        <span>
-          {this.state.currentMapping.sample} ({this.state.currentMapping.group})
-        </span>
-        <hr />
-        <ol>
-          {this.state.unmappedGroups.map((umg, i) => {
-            return <li key={i}>{umg}</li>;
-          })}
-        </ol>
-        <hr />
-        {this.state.mappings.map((m, i) => {
-          return (
-            <small className="mapping" key={i}>
-              <span>
-                <b>sample: </b>
-                {m.sample} ({m.group})
-              </span>
-              <span>
-                <b>type: </b>
-                {m.type}
-              </span>
-              <span>
-                <b>mapping: </b>
-                {JSON.stringify(m.mapping)}
-              </span>
-            </small>
-          );
-        })}
-      </div>
-    );
-
-    const workflowLayout = (
-      <main className="flow">
-        <div className="left">
-          <div className="description">
-            <h3>
-              <span className="emoji">🔊</span> 1. Audio
-            </h3>
-            <article>Spiel das Audiosample ab</article>
-          </div>
-          <AudioPlayer
-            ref={this.audioPlayerRef}
-            fadeDuration={this.fadeDuration}
-            audiosrc={`/assets/audio/audiovisio/${this.state.currentMapping.sample}`}
-            onStopped={() => {
-              this.moveToNextScenario();
-            }}
-          />
-          <div className="empty"></div>
-        </div>
-        <div className="right">
-          <SelectBox
-            ref={this.selectBoxRef}
-            options={["Gefühl", "Farbe", "Form"]}
-            icons={[<IconFeeling />, <IconColor />, <IconShape />]}
-            onIndexChange={(i, name) => {
-              this.setState({
-                isColorReactive: i === 1,
-                currentMapping: Object.assign({}, this.state.currentMapping, {
-                  type: name,
-                  mapping: undefined
-                })
-              });
-            }}
-          >
-            <FeelingsInput
-              style={{
-                display:
-                  this.state.currentMapping.type === "Gefühl" ? "" : "none"
-              }}
-              onSelect={(feeling, point) => {
-                this.setState({
-                  selectedIdx: 0,
-                  backgroundColor: "var(--color-snow)",
-                  currentMapping: Object.assign({}, this.state.currentMapping, {
-                    mapping: { type: feeling, point: point }
-                  })
-                });
-              }}
-            />
-            <ColorInput
-              style={{
-                display:
-                  this.state.currentMapping.type === "Farbe" ? "auto" : "none"
-              }}
-              onChange={(s, r, g, b) => {
-                this.setState({
-                  selectedIdx: 1,
-                  backgroundColor: s,
-                  currentMapping: Object.assign({}, this.state.currentMapping, {
-                    mapping: [r, g, b]
-                  })
-                });
-              }}
-              onSelect={(r, g, b) => {
-                this.setState({
-                  selectedIdx: 1,
-                  currentMapping: Object.assign({}, this.state.currentMapping, {
-                    mapping: [r, g, b]
-                  })
-                });
-              }}
-            />
-            <ShapeInput
-              active={this.state.selectedIdx === 2}
-              style={{
-                display:
-                  this.state.currentMapping.type === "Form" ? "auto" : "none"
-              }}
-              onSelect={shape => {
-                this.setState({
-                  selectedIdx: 2,
-                  backgroundColor: "var(--color-snow)",
-                  currentMapping: Object.assign({}, this.state.currentMapping, {
-                    mapping: shape
-                  })
-                });
-              }}
-            />
-          </SelectBox>
-        </div>
-
-        {this.state.currentMapping.type !== undefined &&
-        this.state.currentMapping.mapping !== undefined ? (
-          <div className="button-wrapper">
-            <div className="description">
-              <h3>
-                <span className="emoji">👉</span> 3. Weiter
-              </h3>
-              <article>Zum nächsten Schritt</article>
-            </div>
-            <button
-              className="next-sample"
-              onClick={() => {
-                this.audioPlayerRef.current.stopAudio();
-              }}
-            >
-              {this.state.completedCount === this.state.scenarioCount
-                ? "Finish"
-                : "Weiter"}
-            </button>
+      <>
+        <button
+          className="toggle-debug"
+          onClick={() => this.setState({ showDebug: !this.state.showDebug })}
+        >
+          debug
+        </button>
+        {this.state.showDebug ? (
+          <div className="mapping-debug">
+            <b className="label">Sound Count:</b>
+            <span>{this.props.sounds.length}</span>
+            <b className="label">Mappings:</b>
+            <span>{this.state.scenarioCount}</span>
+            <b className="label">Completed: </b>
+            <span>{this.state.completedCount}</span>
+            <br />
+            <hr />
+            {this.props.currentMapping ? (
+              <>
+                <b className="label">Type: </b>
+                <span>{this.props.currentMapping.type}</span>
+                <b className="label">Sample: </b>
+                <span>{this.props.currentMapping.sample}</span>
+                <b className="label">Group: </b>
+                <span>{this.props.currentMapping.group}</span>
+                <b className="label">Current Mapping: </b>
+                <span>{JSON.stringify(this.props.currentMapping.mapping)}</span>
+              </>
+            ) : (
+              <></>
+            )}
+            <hr />
+            <b className="label">Groups: </b>
+            <ol>
+              {this.state.unmappedGroups.map((umg, i) => {
+                return <li key={i}>{umg}</li>;
+              })}
+            </ol>
+            <hr />
+            {Object.keys(this.props.mappings).map((key, i) => {
+              const m = this.props.mappings[key];
+              return (
+                <small className="mapping" key={i}>
+                  <h3 className="group">{key}</h3>
+                  <b className="sample">Sample (Group): </b>
+                  <span>
+                    {m.sample} ({m.group})
+                  </span>
+                  <b>type: </b>
+                  <span>{m.type}</span>
+                  <b className="label">Mapping: </b>
+                  <span>{JSON.stringify(m.mapping)}</span>
+                </small>
+              );
+            })}
           </div>
         ) : (
           <></>
         )}
-      </main>
+      </>
     );
+
+    const WorkflowLayout = () => {
+      return (
+        <>
+          <div className="description step-1">
+            <span className="emoji">🔊</span>
+            <h3 className="title">1. Audio</h3>
+            <span className="subtitle">Spiel das Sample ab</span>
+          </div>
+
+          <AudioPlayer
+          /* onStopped={() => { */
+          /*   this.moveToNextScenario(); */
+          /* }} */
+          />
+
+          {this.props.currentMapping.type !== undefined &&
+          this.props.currentMapping.mapping !== undefined ? (
+            <div className="button-wrapper">
+              <div className="description step-3">
+                <button
+                  className="btn-next emoji"
+                  onClick={() => {
+                    this.actions.clearCurrentMapping();
+                  }}
+                >
+                  🔧
+                </button>
+                <div className="text back">
+                  <h3 className="title">Zurück</h3>
+                  <span>Mapping ändern</span>
+                </div>
+                <div className="text next">
+                  <h3 className="title">Weiter</h3>
+                  <span>nächster Schritt</span>
+                </div>
+                <button
+                  className="btn-next emoji"
+                  onClick={() => {
+                    /* this.audioPlayerRef.current.stopAudio(); */
+                    this.moveToNextScenario();
+                  }}
+                >
+                  👉
+                </button>
+              </div>
+            </div>
+          ) : (
+            <></>
+          )}
+
+          <div className="selection-annotation">
+            {this.props.hint.length > 0 ? (
+              <div
+                className="annotation"
+                style={{
+                  transform: `translateX(${this.props.screenPosition.x}px) translateY(${this.props.screenPosition.y}px)`,
+                  opacity: this.props.screenPosition.z,
+                }}
+              >
+                {this.props.hint}
+              </div>
+            ) : (
+              <></>
+            )}
+          </div>
+
+          {this.props.currentMapping.type === undefined &&
+          this.props.currentMapping.mapping === undefined ? (
+            <div className="mapping-selection">
+              <div
+                className="input-selection"
+                onClick={() => {
+                  this.actions.setState(TOTEM_STATES.COLOR_MAPPING);
+                }}
+              >
+                <IconColor />
+                <span>Farbe</span>
+              </div>
+              <div
+                className="input-selection"
+                onClick={() => {
+                  this.actions.setState(TOTEM_STATES.FEELING_MAPPING);
+                }}
+              >
+                <IconFeeling />
+                <span>Gefühl</span>
+              </div>
+              <div
+                className="input-selection"
+                onClick={() => {
+                  this.actions.setState(TOTEM_STATES.SHAPE_MAPPING);
+                }}
+              >
+                <IconShape />
+                <span>Form</span>
+              </div>
+            </div>
+          ) : (
+            <></>
+          )}
+        </>
+      );
+    };
 
     return (
-      <div
-        className="flow"
-        style={{
-          backgroundColor: this.state.isColorReactive
-            ? this.state.backgroundColor
-            : `var(--color-snow)`
-        }}
-      >
+      <main className="flow">
         {this.state.completedCount !== this.state.scenarioCount ? (
-          workflowLayout
+          <WorkflowLayout />
         ) : (
           <></>
         )}
-        <Link to="/result">Weiter</Link>
+
         {process.env.NODE_ENV === "development" ? mappingDebug : <></>}
+
         <Progressbar
           percent={(this.state.completedCount / this.state.scenarioCount) * 100}
           completedCount={this.state.completedCount}
           scenarioCount={this.state.scenarioCount}
         />
-      </div>
+      </main>
     );
   }
 }
 
-export default withRouter(Flow);
+export default withRouter(totemLogic(playerLogic(Flow)));

@@ -1,0 +1,29 @@
+@import @vi.son/rouge/1-settings/_colors.sass
+@import @vi.son/rouge/1-settings/_breakpoints.sass
+@import @vi.son/rouge/2-tools/_media-queries.sass
+@import @vi.son/rouge/2-tools/_animations.sass
+
+.artwork
+  display: grid
+  grid-template-columns: 30% 1fr
+  min-height: 100vh
+  pointer-events: none
+  cursor: grab
+
+  .canvas-wrapper
+    cursor: grab
+    position: fixed
+    height: 100vh
+    width: 100vw
+    top: 0
+    left: 0
+    display: flex
+    z-index: -1
+    opacity: 0
+    animation: fadeIn 1s 1s ease
+    animation-fill-mode: forwards
+    canvas
+      pointer-events: all
+      flex-grow: 1
+      width: 100%
+      height: 100%

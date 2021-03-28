@@ -1,75 +1,182 @@
+@import @vi.son/rouge/1-settings/_colors.sass
+@import @vi.son/rouge/1-settings/_typograhpy.sass
+@import @vi.son/rouge/1-settings/_breakpoints.sass
+@import @vi.son/rouge/2-tools/_media-queries.sass
+
 .flow
   display: grid
+  height: 100vh
   width: 100vw
-  grid-template-columns: 2fr 5fr
-  .left
-    margin-bottom: 80px
-    display: flex
-    flex-direction: column
-    justify-content: space-between
-    align-items: center
-    .description
-      text-align: center
-      margin-top: 10vh
-      h3,
-      article
-        color: var(--color-darkness)
-    .empty
-      height: 50vh
-
-  .right
-    margin-bottom: 80px
-
-
-  .description
-    text-align: left
-    h3
-      font-size: 1.9375rem
-      text-align: left
-      color: var(--color-darkness)
-      .emoji
-        width: 52px
-        display: inline-block
-    article
-      margin-left: 60px
-      color: var(--color-darkness)
+  grid-template-rows: 1fr 120px
 
   .button-wrapper
-    position: fixed
-    right: 5vw
-    bottom: 5vw
     display: flex
-    flex-direction: column
-    .next-sample
-      background: var(--color-curacao)
-      color: var(--color-snow)
-      transition: background 200ms ease
-      &:hover
-        color: var(--color-snow)
-        background: var(--color-darkness)
-      &:disabled
-        opacity: 0.05
-        background: 0
-      &:hover
-          box-shadow: none
+    justify-content: center
+    align-items: center
+
+  .description
+    pointer-events: all
+    .title
+      margin: 0
+    .emoji
+      grid-row: span 2
+      align-self: center
+
+    &.step-1
+      position: fixed
+      top: 60px
+      left: 20px
+      display: grid
+      grid-template-columns: auto
+      grid-template-rows: auto auto
+      .subtitle
+        max-width: 10ch
+
+    &.step-3
+      cursor: pointer
+      align-self: center
+      display: flex
+      display: grid
+      grid-template-rows: auto auto
+      margin: 0 20px
+      margin-bottom: 20px
+      grid-template-columns: 60px auto auto 60px
+      grid-gap: 20px
+      +from($tablets)
+        margin-bottom: 60px
+        grid-template-columns: 100px auto auto 100px
+        grid-gap: 40px
+      +from($desktops)
+        margin-bottom: 120px
+        grid-template-columns: 100px auto auto 100px
+        grid-gap: 60px
+      .text
+        align-self: center
+        justify-self: center
+        grid-row: span 2
+        line-height: 1.0
+        &.back
+          justify-self: start
+          text-align: left
+        &.next
+          justify-self: end
+          text-align: right
+      .btn-next
+        margin: 0
+        width: 100px
+        height: 100px
+        border-radius: 100px
+        display: flex
+        justify-content: center
+        align-items: center
+        +until($tablets)
+          width: 50px
+          height: 50px
+          font-size: 2rem
+
+  .audio-player
+    margin-top: 50px
+    +from($tablets)
+      margin-top: 100px
+
+  .toggle-debug
+    position: fixed
+    top: 20px
+    left: 0
+    background: var(--color-ultradark)
+    color: var(--color-snow)
+    padding: 5px
+    z-index: 99999
+    pointer-events: all
+    font-size: 0.8em
+    font-family: Monospace
 
   .mapping-debug
+    font-family: Monospace
     position: fixed
-    left: 0
-    bottom: 0
+    left: 10px
+    top: 70px
     z-index: 999
-    background: rgba(0, 0, 0, 0.8)
-    max-width: 50ch
-    color: white
-    font-size: 0.9rem
-    padding: 20px
-    word-wrap: break-word
-    hr
-      opacity: 0.2
-      margin: 40px 0
-    *
-      color: white
-    .mapping
+    background: var(--color-ultradark)
+    color: var(--color-snow)
+    font-size: 0.75rem
+    padding: 10px
+    display: grid
+    grid-template-columns: 20ch 1fr
+    grid-gap: 5px
+    .current-mapping
       display: flex
       flex-direction: column
-      margin-bottom: 20px
+    hr
+      opacity: 0.2
+      grid-column: span 2
+    *
+      color: var(--color-snow)
+    .mapping
+      grid-column: span 2
+      display: flex
+      flex-direction: column
+      margin-bottom: 2px
+      display: grid
+      grid-template-columns: 20ch 1fr
+      grid-gap: 6px
+      .group
+        font-size: 1.5rem
+        grid-column: span 2
+
+  .mapping-selection
+    display: grid
+    grid-template-columns: 1fr 1fr 1fr
+    align-self: center
+    justify-self: center
+    justify-content: space-around
+    grid-gap: 10px
+    max-width: 60ch
+    margin-bottom: 40px
+    +from($tablets)
+      bottom: 40px
+      grid-gap: 40px
+      max-width: 60ch
+      margin-bottom: 60px
+    +from($desktops)
+      grid-gap: 60px
+      bottom: 60px
+      margin-bottom: 120px
+    .input-selection
+      color: var(--color-darkness)
+      pointer-events: all
+      width: 120px
+      display: flex
+      flex-direction: column
+      justify-content: center
+      align-items: center
+      cursor: pointer
+      &:hover
+        opacity: 0.5
+      svg
+        transform: scale(1.1)
+
+    .debug
+      position: fixed
+      bottom: 0
+      text-align: center
+      font-family: $font-text
+      font-size: 0.9rem
+      grid-column: span 3
+      background: var(--color-ultradark)
+      color: var(--color-snow)
+
+.selection-annotation
+  position: fixed
+  height: 100vh
+  width: 100vw
+  pointer-events: none
+
+  .annotation
+    position: absolute
+    left: 50%
+    top: 50%
+    background: var(--color-snow)
+    color: var(--color-ultradark)
+    padding: 10px
+    z-index: 99999

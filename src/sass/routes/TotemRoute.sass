@@ -1,0 +1,25 @@
+.totem
+  width: 100vw
+  height: 100vh
+  display: grid
+  grid-template-columns: 30% 1fr
+  min-height: 100vh
+  pointer-events: none
+
+.kontrol-toggle,
+  .kontrol
+    pointer-events: all
+
+.samples
+  display: flex
+  flex-direction: column
+  pointer-events: all
+  span
+    cursor: pointer
+    &:hover
+      opacity: 0.5
+
+.btn-to-start
+  position: fixed
+  left: 60px
+  bottom: 60px
