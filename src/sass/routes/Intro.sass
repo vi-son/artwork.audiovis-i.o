@@ -1,6 +1,7 @@
 @import @vi.son/rouge/1-settings/_colors.sass
 @import @vi.son/rouge/1-settings/_breakpoints.sass
 @import @vi.son/rouge/2-tools/_media-queries.sass
+@import @vi.son/rouge/2-tools/_animations.sass
 
 .intro
   display: flex
@@ -8,13 +9,15 @@
   justify-content: center
   flex-grow: 1
   align-self: center
-  overflow-y: scroll
   +until($tablets)
     margin: 0 20px
   +from($tablets)
     max-width: 60ch
   +from($desktops)
     max-width: 80ch
+  animation: fade-in-down 1s 1.5s ease
+  animation-fill-mode: both
+  transform: translateY(-200px)
 
   .content
     padding: 60px auto
@@ -27,3 +30,7 @@
     .to-flow
       flex-grow: 0
       pointer-events: all
+      opacity: 0
+      transform: translateY(50px)
+      animation: fade-in-up 1s 2s ease
+      animation-fill-mode: both
