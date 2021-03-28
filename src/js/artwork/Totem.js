@@ -105,6 +105,16 @@ class Totem extends THREE.Group {
       this.stats.dom.className = "stats";
       document.body.appendChild(this.stats.dom);
     }
+
+    // Loading infrastructure
+    this._samplesFolder = `/assets/audio/samples/`;
+    this._loadingManager = new THREE.LoadingManager();
+    this._audioLoader = new THREE.AudioLoader(this._loadingManager);
+    this._audioLoader
+      .setPath(this._samplesFolder)
+      .load("/bass/montez-sample-06-synth-bass-02.mp3", () => {
+        console.log("Loading first sound...");
+      });
   }
 
   pause() {
@@ -481,43 +491,44 @@ class Totem extends THREE.Group {
   }
 
   _loadSounds(mappingsArray) {
-    // Audio
-    this.samplesFolder = `/assets/audio/samples/`;
-    this._loadingManager = new THREE.LoadingManager();
     // Show audio sources
     this.analysers = [];
+    this.positionalAudios = [];
     const audioVisualizerCubes = [];
-    mappingsArray.map((c, i) => {
-      const positionalAudio = new THREE.PositionalAudio(this.listener);
-      const analyser = new THREE.AudioAnalyser(positionalAudio, 32);
+
+    this.positionalAudios = mappingsArray.map((c, i) => {
+      const audio = new THREE.PositionalAudio(this.listener);
+      const analyser = new THREE.AudioAnalyser(audio, 32);
       analyser.smoothingTimeConstant = 0.9;
-      new THREE.AudioLoader(this._loadingManager)
-        .setPath(this.samplesFolder)
-        .load(
-          c.sample,
-          (buffer) => {
-            positionalAudio.setBuffer(buffer);
-            positionalAudio.setLoop(true);
-            positionalAudio.setVolume(0.7);
-            this.analysers.push(analyser);
-            totemLogic.actions.addSample(positionalAudio);
-          },
-          (xhr) => {},
-          (err) => {
-            console.error("Error while loading sound ", err);
-          }
-        );
+      this.analysers.push(analyser);
+      return audio;
     });
-    this._loadingManager.onProgress = (url, itemsLoaded, itemsTotal) => {
-      if (itemsLoaded / itemsTotal === 1.0) {
-        this._allLoaded = true;
-        console.log("All sounds loaded: ");
-        console.log(totemLogic.values.sounds);
-        totemLogic.actions.setVolumes(
-          totemLogic.values.sounds.map((s) => s.getVolume())
-        );
-      }
+    mappingsArray.map((c, i) => {
+      this._audioLoader.setPath(this._samplesFolder).load(
+        c.sample,
+        (buffer) => {
+          this.positionalAudios[i].setBuffer(buffer);
+          this.positionalAudios[i].setLoop(true);
+          this.positionalAudios[i].setVolume(0.7);
+          // Save audio
+          totemLogic.actions.addSample(this.positionalAudios[i]);
+        },
+        (xhr) => {},
+        (err) => console.error("Error while loading sound ", err)
+      );
+    });
+
+    // Finished loading
+    this._loadingManager.onLoad = () => {
+      this._allLoaded = true;
+      console.log("All sounds loaded... playing", this.positionalAudios);
+      this.positionalAudios.forEach((pa, i) => {});
     };
+
+    this._loadingManager.onProgress = (url, loaded, total) => {
+      console.log((loaded / total) * 100 + "% loaded");
+    };
+
     this._loadingManager.onError = (url) => {
       console.error(`Error while loading ${url}`);
     };
