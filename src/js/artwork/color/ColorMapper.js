@@ -141,7 +141,7 @@ class ColorMapper {
       y: normal.y,
       z: normal.z,
     };
-    const cameraTween = new TWEEN.Tween(from).to(to, 800);
+    const cameraTween = new TWEEN.Tween(from).to(to, 300);
     cameraTween
       .onUpdate(function () {
         camera.position.set(from.x, from.y, from.z);

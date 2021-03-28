@@ -50,13 +50,6 @@ class Flow extends React.Component {
     this.moveToNextScenario = this.moveToNextScenario.bind(this);
   }
 
-  componentWillReceiveProps({ selection }) {
-    // const newMapping = Object.assign({}, this.state.currentMapping, selection);
-    // this.setState({
-    //   currentMapping: newMapping,
-    // });
-  }
-
   prepareNextScenario() {
     if (this.state.completedCount + 1 === this.state.scenarioCount) {
       this.props.audio.pause();
@@ -109,6 +102,8 @@ class Flow extends React.Component {
         </button>
         {this.state.showDebug ? (
           <div className="mapping-debug">
+            <b className="label">Sound Count:</b>
+            <span>{this.props.sounds.length}</span>
             <b className="label">Mappings:</b>
             <span>{this.state.scenarioCount}</span>
             <b className="label">Completed: </b>
@@ -209,6 +204,22 @@ class Flow extends React.Component {
           ) : (
             <></>
           )}
+
+          <div className="selection-annotation">
+            {this.props.hint.length > 0 ? (
+              <div
+                className="annotation"
+                style={{
+                  transform: `translateX(${this.props.screenPosition.x}px) translateY(${this.props.screenPosition.y}px)`,
+                  opacity: this.props.screenPosition.z,
+                }}
+              >
+                {this.props.hint}
+              </div>
+            ) : (
+              <></>
+            )}
+          </div>
 
           {this.props.currentMapping.type === undefined &&
           this.props.currentMapping.mapping === undefined ? (

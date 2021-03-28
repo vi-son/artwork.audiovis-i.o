@@ -72,7 +72,6 @@ const AudioPlayer = ({}) => {
   };
 
   useEffect(() => {
-    console.log(currentMapping.sample);
     if (!audio.src.includes(currentMapping.sample)) {
       audio.pause();
       setAudioSource(currentMapping.sample);

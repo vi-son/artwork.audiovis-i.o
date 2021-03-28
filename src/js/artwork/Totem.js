@@ -136,6 +136,7 @@ class Totem extends THREE.Group {
   }
 
   dispose() {
+    console.log("Dispose Totem");
     while (this.totem.children.length > 0) {
       this.totem.remove(this.totem.children.slice(-1).pop());
     }
@@ -187,7 +188,8 @@ class Totem extends THREE.Group {
 
   _setupRaycasting() {
     this._raycaster = new THREE.Raycaster();
-    this._raycastHit = [];
+    this._hit = [];
+    this._screenPosition = new THREE.Vector3();
     this._mousePosition = new THREE.Vector2();
   }
 
@@ -722,6 +724,18 @@ class Totem extends THREE.Group {
         );
         this.feelingMapper.handleRaycast(this._hit, this.camera.position);
         break;
+    }
+
+    if (this._hit.length > 0) {
+      this._screenPosition = this._hit[0].point.clone().project(this.camera);
+
+      this._screenPosition.x = this._screenPosition.x * this.size.width * 0.5;
+      this._screenPosition.y = this._screenPosition.y * this.size.height * -0.5;
+      this._screenPosition.z = 1.0;
+      totemLogic.actions.updateScreenPosition(this._screenPosition);
+    } else {
+      this._screenPosition.z = 0.0;
+      totemLogic.actions.updateScreenPosition(this._screenPosition);
     }
   }
 

@@ -27,11 +27,6 @@ const TotemRoute = () => {
 
   useEffect(() => {
     setState(TOTEM_STATES.TOTEM);
-    return () => {
-      if (totem) {
-        totem.dispose();
-      }
-    };
   }, []);
 
   const kontrolConfig = {
@@ -119,7 +114,10 @@ const TotemRoute = () => {
         className="btn-to-start"
         emoji={"🔄"}
         text="nochmal"
-        onClick={() => history.push("/flow")}
+        onClick={() => {
+          totem.dispose();
+          history.push("/flow");
+        }}
       />
     </div>
   );

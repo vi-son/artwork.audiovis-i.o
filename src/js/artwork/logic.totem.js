@@ -1,4 +1,5 @@
 import { kea } from "kea";
+import { Vector3 } from "three";
 // Local imports
 import Totem from "./Totem.js";
 
@@ -40,6 +41,9 @@ const totemLogic = kea({
 
     storeMapping: (mapping) => ({ mapping }),
     clearMappings: () => true,
+
+    updateScreenPosition: (screenPosition) => ({ screenPosition }),
+    setHint: (text) => ({ text }),
   },
 
   reducers: {
@@ -62,6 +66,13 @@ const totemLogic = kea({
       {
         initTotem: (_, { totem }) => totem,
       },
+    ],
+
+    hint: ["", { setHint: (_, { text }) => text }],
+
+    screenPosition: [
+      new Vector3(),
+      { updateScreenPosition: (v, { screenPosition }) => screenPosition },
     ],
 
     // @TODO add groups
@@ -95,7 +106,7 @@ const totemLogic = kea({
     ],
 
     mappings: [
-      {},
+      exampleMappings,
       {
         storeMapping: (mappings, { mapping }) => {
           const entry = {};
@@ -115,8 +126,7 @@ const totemLogic = kea({
         removeSample: (samples, { sample }) => samples,
         updateSamples: (_, { samples }) => [...samples],
         clearSamples: (samples) => {
-          samples.map((s) => s.pause());
-          return samples.splice(0, samples.length);
+          return [];
         },
       },
     ],
@@ -126,7 +136,8 @@ const totemLogic = kea({
 
   listeners: ({ actions, values }) => ({
     setState: () => {
-      console.log("STATE CHANGE", values.state);
+      console.log("State change", values.state);
+      actions.setHint("");
       if (values.totem) {
         values.totem.reactOnStateChange();
       }

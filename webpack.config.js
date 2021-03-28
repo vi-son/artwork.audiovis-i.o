@@ -52,8 +52,8 @@ module.exports = (env) => {
     output: {
       path: path.resolve(__dirname, "build"),
       publicPath: "/",
-      filename: "[name].bundle.js",
-      chunkFilename: "[name].bundle.js",
+      filename: "[name].[hash].bundle.js",
+      chunkFilename: "[name].[hash].bundle.js",
     },
     resolve: {
       extensions: [".js"],
@@ -129,7 +129,6 @@ module.exports = (env) => {
     },
     plugins: [
       new webpack.DefinePlugin({
-        "process.env.NODE_ENV": JSON.stringify(env.NODE_ENV),
         "process.env.VERSION": JSON.stringify(getVersionFromGit()),
         "process.env.SAMPLES": JSON.stringify(readSamplesFromFiles()),
       }),
@@ -137,6 +136,7 @@ module.exports = (env) => {
         template: __dirname + "/src/html/index.html",
         filename: "index.html",
         inject: "body",
+        hash: true,
       }),
       new FaviconsWebpackPlugin(
         path.resolve(`${__dirname}/assets/svg/favicon.svg`)

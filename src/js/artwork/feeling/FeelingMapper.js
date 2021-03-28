@@ -14,7 +14,7 @@ class FeelingMapper {
     this._onSelect = (type, mapping) => {
       totemLogic.actions.mapCurrentSampleTo(type, mapping);
     };
-    this._onHover = () => {};
+    this._onHover = (feeling) => totemLogic.actions.setHint(feeling);
 
     // Light
     var light = new THREE.HemisphereLight(0xffffff, 0x666666, 1.0);
@@ -76,7 +76,6 @@ class FeelingMapper {
     const material = new THREE.MeshBasicMaterial({
       color: 0x7a7a7a,
       side: THREE.DoubleSide,
-      flatShading: true,
       transparent: true,
       opacity: 0,
     });
@@ -216,13 +215,11 @@ class FeelingMapper {
         y: normal.y,
         z: normal.z,
       };
-      const cameraTween = new TWEEN.Tween(from).to(to, 800);
-      cameraTween
-        .onUpdate(function () {
-          camera.position.set(from.x, from.y, from.z);
-          controls.update();
-        })
-        .easing(TWEEN.Easing.Quadratic.InOut);
+      const cameraTween = new TWEEN.Tween(from).to(to, 200);
+      cameraTween.onUpdate(function () {
+        camera.position.set(from.x, from.y, from.z);
+        controls.update();
+      });
       cameraTween.start();
       controls.update();
       const { id } = this._raycastHit[0].object;

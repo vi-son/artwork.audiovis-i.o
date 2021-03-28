@@ -21,6 +21,7 @@ class ShapeMapper {
     this._onSelect = (type, mapping) => {
       totemLogic.actions.mapCurrentSampleTo(type, mapping);
     };
+    this._onHover = (shape) => totemLogic.actions.setHint(shape);
 
     // Light
     var light = new THREE.HemisphereLight(0xffffff, 0x666666, 2.0);
@@ -45,7 +46,7 @@ class ShapeMapper {
     }
     this._cubeTween = new TWEEN.Tween(this._cube.material).to(
       { opacity: 1 },
-      800
+      100
     );
     // Sphere
     const sphereGeometry = new THREE.SphereBufferGeometry(0.26, 32, 32);
@@ -58,7 +59,7 @@ class ShapeMapper {
     this._sphere.name = "Kugel";
     this._sphereTween = new TWEEN.Tween(this._sphere.material).to(
       { opacity: 1 },
-      550
+      150
     );
     // Cone
     const coneGeometry = new THREE.ConeGeometry(0.2, 0.5, 30);
@@ -71,7 +72,7 @@ class ShapeMapper {
     this._cone.name = "Kegel";
     this._coneTween = new TWEEN.Tween(this._cone.material).to(
       { opacity: 1 },
-      620
+      120
     );
     // Cylinder
     const cylinderGeometry = new THREE.CylinderGeometry(0.2, 0.2, 0.5, 32);
@@ -84,7 +85,7 @@ class ShapeMapper {
     this._cylinder.name = "Zylinder";
     this._cylinderTween = new TWEEN.Tween(this._cylinder.material).to(
       { opacity: 1 },
-      380
+      180
     );
     // Icosahedron
     const icosahedronGeometry = new THREE.IcosahedronGeometry(0.25, 0);
@@ -97,7 +98,7 @@ class ShapeMapper {
     this._icosahedron.name = "Ikosaeder";
     this._icosahedronTween = new TWEEN.Tween(this._icosahedron.material).to(
       { opacity: 1 },
-      490
+      190
     );
     // Octahedron
     const octahedronGeometry = new THREE.OctahedronGeometry(0.25, 0);
@@ -110,7 +111,7 @@ class ShapeMapper {
     this._octahedron.name = "Oktaeder";
     this._octahedronTween = new TWEEN.Tween(this._octahedron.material).to(
       { opacity: 1 },
-      800
+      100
     );
 
     this._group = new THREE.Group();
@@ -157,6 +158,7 @@ class ShapeMapper {
         b: this._highlightColor.b,
       };
       new TWEEN.Tween(object.material.color).to(toColor, 100).start();
+      this._onHover(object.name);
       if (this._mouseDown) {
         this._selectedShape = object;
         this._onSelect(MAPPINGS.SHAPE, this._selectedShape.name);
@@ -171,7 +173,7 @@ class ShapeMapper {
           g: this._defaultColor.g,
           b: this._defaultColor.b,
         };
-        new TWEEN.Tween(object.material.color).to(toColor, 300).start();
+        new TWEEN.Tween(object.material.color).to(toColor, 100).start();
       });
       if (this._selectedShape) {
         const toColor = {
@@ -180,7 +182,7 @@ class ShapeMapper {
           b: this._selectedColor.b,
         };
         new TWEEN.Tween(this._selectedShape.material.color)
-          .to(toColor, 300)
+          .to(toColor, 100)
           .start();
       }
     }
