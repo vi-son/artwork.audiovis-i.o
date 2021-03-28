@@ -52,8 +52,8 @@ module.exports = (env) => {
     output: {
       path: path.resolve(__dirname, "build"),
       publicPath: "/",
-      filename: "[name].[hash].bundle.js",
-      chunkFilename: "[name].[hash].bundle.js",
+      filename: "[name].[fullhash].bundle.js",
+      chunkFilename: "[name].[fullhash].bundle.js",
     },
     resolve: {
       extensions: [".js"],
@@ -144,18 +144,18 @@ module.exports = (env) => {
       new CopyPlugin({
         patterns: [{ from: path.resolve(__dirname, "assets"), to: "assets" }],
       }),
-      new WorkboxPlugin.GenerateSW({
-        swDest: "sw.js",
-        clientsClaim: true,
-        skipWaiting: true,
-        runtimeCaching: [
-          {
-            urlPattern: new RegExp("http://localhost:3333/*.js"),
-            handler: "StaleWhileRevalidate",
-          },
-        ],
-        maximumFileSizeToCacheInBytes: 15000000,
-      }),
+      // new WorkboxPlugin.GenerateSW({
+      //   swDest: "sw.js",
+      //   clientsClaim: true,
+      //   skipWaiting: true,
+      //   runtimeCaching: [
+      //     {
+      //       urlPattern: new RegExp("http://localhost:3333/*.js"),
+      //       handler: "StaleWhileRevalidate",
+      //     },
+      //   ],
+      //   maximumFileSizeToCacheInBytes: 15000000,
+      // }),
     ],
   };
 };
