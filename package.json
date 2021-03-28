@@ -5,6 +5,7 @@
   "main": "src/js/audiovis.io.js",
   "scripts": {
     "dev": "npx webpack serve --open --hot --mode development",
+    "start": "npx webpack serve --open --hot --mode production",
     "build": "npx webpack --config webpack.config.production.js --mode production --progress"
   },
   "repository": {
