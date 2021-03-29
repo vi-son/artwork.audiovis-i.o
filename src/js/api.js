@@ -2,7 +2,7 @@ const BASE_URL_PRD = "https://mixing-senses.art/api";
 const BASE_URL_DEV = "http://localhost:8888/api";
 
 const BASE_URL =
-  process.env.NODE_ENV === "production" ? BASE_URL_PRD : BASE_URL_PRD;
+  process.env.NODE_ENV === "production" ? BASE_URL_PRD : BASE_URL_DEV;
 
 const headers = new Headers();
 headers.append(

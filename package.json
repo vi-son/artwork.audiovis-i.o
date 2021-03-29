@@ -52,10 +52,11 @@
     "workbox-webpack-plugin": "^6.1.2"
   },
   "dependencies": {
-    "@vi.son/components": "^0.0.6",
+    "@vi.son/components": "^0.0.7",
     "dat.gui": "^0.7.7",
     "favicons": "^6.2.1",
     "glsl-fast-gaussian-blur": "^1.0.2",
+    "moment": "^2.29.1",
     "reselect": "^4.0.0",
     "shelljs": "^0.8.4"
   }
