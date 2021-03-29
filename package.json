@@ -1,6 +1,6 @@
 {
   "name": "vi.son-audiovis-i.o",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "audio to X mapping tool for mixing-senses.art",
   "main": "src/js/audiovis.io.js",
   "scripts": {
