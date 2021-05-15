@@ -90,25 +90,15 @@ const TotemRoute = () => {
       {/*   Export */}
       {/* </button> */}
 
-      {/* <div */}
-      {/*   className={[ */}
-      {/*     "interaction-explanation", */}
-      {/*     state !== "totem" ? "hidden" : "", */}
-      {/*   ].join(" ")} */}
-      {/* > */}
-      {/*   <IconMouse /> */}
-      {/*   <article className="text"> */}
-      {/*     Klick und ziehen zum Drehen Mausrad für Zoom */}
-      {/*   </article> */}
-      {/* </div> */}
-      <div>
-        <Kontrol config={kontrolConfig}>
-          {/* <div className="samples"> */}
-          {/*   {sounds.map((v, i) => { */}
-          {/*     return <SoundUI key={i} index={i} volume={0.0} />; */}
-          {/*   })} */}
-          {/* </div> */}
-        </Kontrol>
+      <div className="interaction-explanation">
+        <IconMouse />
+        <article className="text">
+          Klick und ziehen zum Drehen Mausrad für Zoom
+        </article>
+      </div>
+
+      <div className="kontrol-wrapper">
+        <Kontrol config={kontrolConfig} />
       </div>
       <ButtonEmoji
         className="btn-to-start"

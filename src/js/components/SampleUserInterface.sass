@@ -1,0 +1,34 @@
+.sample-user-interface
+  --color-sample-a: #a1abb1
+  --color-sample-b: #949da2
+  --color-sample-hover: #7e95a2
+
+  pointer-events: all
+  bottom: 0
+  position: fixed
+  margin-bottom: 40px
+  box-shadow: 0 10px 30px var(--color-darkness-30)
+  border-radius: 3px
+  overflow: hidden
+  .sample
+    padding: 7px
+    display: grid
+    grid-template-columns: auto 20px
+    font-size: 0.8rem
+    background: var(--color-sample-a)
+    border-bottom: 1px solid transparent
+    justify-content: space-between
+    flex-grow: 1
+    align-items: space-between
+    cursor: pointer
+    &:nth-child(2n)
+      background: var(--color-sample-b)
+    &:hover
+      background: var(--color-sample-hover)
+
+    .sample-name
+      width: 30ch
+
+    .icon
+      &:hover
+        opacity: 0.5

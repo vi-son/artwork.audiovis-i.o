@@ -33,7 +33,8 @@ const totemLogic = kea({
     updateSamples: (samples) => ({ samples }),
     clearSamples: () => true,
 
-    setVolumes: (volumes) => ({ volumes }),
+    addVolume: (volume) => ({ volume }),
+    updateVolume: (index, volume) => ({ index, volume }),
 
     mapCurrentSampleTo: (type, mapping) => ({ type, mapping }),
     setCurrentSample: (group, sample) => ({ group, sample }),
@@ -69,6 +70,15 @@ const totemLogic = kea({
     ],
 
     hint: ["", { setHint: (_, { text }) => text }],
+
+    volumes: [
+      [],
+      {
+        addVolume: (state, { volume }) => [...state, volume],
+        updateVolume: (state, { index, volume }) =>
+          state.map((v, i) => (i === index ? volume : v)),
+      },
+    ],
 
     screenPosition: [
       new Vector3(),
@@ -130,8 +140,6 @@ const totemLogic = kea({
         },
       },
     ],
-
-    volumes: [[], { setVolumes: (_, { volumes }) => volumes }],
   },
 
   listeners: ({ actions, values }) => ({
@@ -144,15 +152,11 @@ const totemLogic = kea({
     },
 
     addSample: ({ sample }) => {
-      console.log(sample);
-      console.log(values.sounds);
       if (values.sounds.length >= 5) {
-        values.sounds.forEach((s) => s.play());
+        values.sounds.forEach((s) => {
+          s.play();
+        });
       }
-    },
-
-    updateSamples: ({}) => {
-      actions.setVolumes(values.sounds.map((s) => s.getVolume()));
     },
 
     clearCurrentMapping: ({}) => {

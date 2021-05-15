@@ -1,12 +1,10 @@
-.totem
-  width: 100vw
-  height: 100vh
-  display: grid
-  grid-template-columns: 30% 1fr
-  min-height: 100vh
-  pointer-events: none
-
-.kontrol-toggle,
+.kontrol-wrapper
+  position: fixed
+  left: 40px
+  top: 40px
+  z-index: 999999
+  pointer-events: all
+  .kontrol-toggle,
   .kontrol
     pointer-events: all
 
@@ -23,3 +21,17 @@
   position: fixed
   left: 60px
   bottom: 60px
+
+.interaction-explanation
+  font-size: 0.75rem
+  opacity: 0.6
+  margin-top: 40px
+  display: flex
+  align-items: center
+  justify-content: center
+  .icon
+    transform: scale(0.75)
+  .text
+    margin-top: 10px
+    max-width: 20ch
+    color: var(--color-snow)
