@@ -8,10 +8,9 @@ import {
   useLocation,
   useHistory,
 } from "react-router-dom";
-import { useActions } from "kea";
-import totemLogic, { TOTEM_STATES } from "./artwork/logic.totem.js";
+import { useActions, resetContext, getContext, useValues } from "kea";
+import totemLogic from "./artwork/logic.totem.js";
 import { Provider } from "react-redux";
-import { kea, useValues, resetContext, getContext } from "kea";
 import md5 from "blueimp-md5";
 import { Kontrol } from "@vi.son/components";
 import { ExhibitionLayout } from "@vi.son/components";
@@ -20,6 +19,7 @@ import { ButtonCloseNarrative } from "@vi.son/components";
 import { ButtonOpenNarrative } from "@vi.son/components";
 import { ButtonToExhibition } from "@vi.son/components";
 import { ButtonDownloadRendering } from "@vi.son/components";
+import SampleUserInterface from "./components/SampleUserInterface.js";
 // Local imports
 import ArtworkContainer from "./artwork/ArtworkContainer.js";
 import Intro from "./routes/Intro.js";
@@ -93,6 +93,7 @@ const Artwork = () => {
 
           <Route path="/totem">
             <TotemRoute />
+            <SampleUserInterface />
             <ButtonOpenNarrative
               showNarrative={showNarrative}
               setShowNarrative={setShowNarrative}

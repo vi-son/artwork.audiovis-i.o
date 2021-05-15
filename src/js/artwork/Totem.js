@@ -487,26 +487,28 @@ class Totem extends THREE.Group {
   _loadSounds(mappingsArray) {
     // Show audio sources
     this.analysers = [];
-    this.positionalAudios = [];
     const audioVisualizerCubes = [];
 
-    this.positionalAudios = mappingsArray.map((c, i) => {
-      const audio = new THREE.PositionalAudio(this.listener);
-      const analyser = new THREE.AudioAnalyser(audio, 32);
-      analyser.smoothingTimeConstant = 0.9;
-      this.analysers.push(analyser);
-      return audio;
-    });
     let audioCounter = 0;
+
+    this._loadingManager = new THREE.LoadingManager();
+    const audioLoader = new THREE.AudioLoader(this._loadingManager);
+
     mappingsArray.map((c, i) => {
-      new THREE.AudioLoader().setPath(this._samplesFolder).load(
+      audioLoader.setPath(this._samplesFolder).load(
         c.sample,
         (buffer) => {
-          this.positionalAudios[i].setBuffer(buffer);
-          this.positionalAudios[i].setLoop(true);
-          this.positionalAudios[i].setVolume(0.7);
+          const audio = new THREE.PositionalAudio(this.listener);
+          audio.setBuffer(buffer);
+          audio.setLoop(true);
+          audio.setVolume(1.0);
+          audio.name = c.sample;
+          const analyser = new THREE.AudioAnalyser(audio, 32);
+          analyser.smoothingTimeConstant = 0.9;
+          this.analysers.push(analyser);
           // Save audio
-          totemLogic.actions.addSample(this.positionalAudios[i]);
+          totemLogic.actions.addSample(audio);
+          totemLogic.actions.addVolume(1.0);
           audioCounter++;
         },
         (xhr) => {},
