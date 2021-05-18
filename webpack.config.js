@@ -142,7 +142,7 @@ module.exports = (env) => {
         path.resolve(`${__dirname}/assets/svg/favicon.svg`)
       ),
       new CopyPlugin({
-        patterns: [{ from: path.resolve(__dirname, "assets"), to: "assets" }],
+        patterns: [{ from: "assets", to: "assets" }],
       }),
       // new WorkboxPlugin.GenerateSW({
       //   swDest: "sw.js",

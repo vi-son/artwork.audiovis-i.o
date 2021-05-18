@@ -76,6 +76,7 @@ const AudioPlayer = ({}) => {
       audio.pause();
       setAudioSource(currentMapping.sample);
     }
+    return () => {};
   }, [currentMapping]);
 
   useEffect(() => {

@@ -5,7 +5,7 @@ import totemLogic from "../artwork/logic.totem.js";
 import "./SampleUserInterface.sass";
 
 const SampleUserInterface = () => {
-  const { volumes, sounds } = useValues(totemLogic);
+  const { volumes, samples } = useValues(totemLogic);
   const { updateVolume } = useActions(totemLogic);
 
   return (
@@ -17,11 +17,13 @@ const SampleUserInterface = () => {
             key={i}
             onClick={() => {
               const newVolume = volume >= 0.5 ? 0.0 : 1.0;
-              sounds[i].setVolume(newVolume);
+              samples[i].audio.setVolume(newVolume);
               updateVolume(i, newVolume);
             }}
           >
-            <span className="sample-name">{sounds[i].name.split("/")[0]}</span>
+            <span className="sample-name">
+              {samples[i]?.name?.split("/")[0] || ""}
+            </span>
             <span className={`sound ${volume >= 0.5 ? "on" : "off"}`}>
               <span className="icon">{volume <= 0.5 ? "🔇" : "🔊"}</span>
             </span>

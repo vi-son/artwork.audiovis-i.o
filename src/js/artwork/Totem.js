@@ -12,6 +12,7 @@ import * as dat from "dat.gui";
 import { utils } from "@vi.son/components";
 const { mobileCheck } = utils;
 // Local imports
+import Sample from "./Sample";
 import totemLogic, { TOTEM_STATES } from "./logic.totem.js";
 import createLineGeometry from "../utils/createLineGeometry.js";
 import { remap, randomIndex } from "../utils/math.js";
@@ -114,8 +115,8 @@ class Totem extends THREE.Group {
     this.renderer.setAnimationLoop(null);
     this.clock.stop();
     totemLogic.actions.updateSamples(
-      totemLogic.values.sounds.map((s) => {
-        s.setVolume(0.0);
+      totemLogic.values.samples.map((s) => {
+        s?.audio?.setVolume(0.0);
         return s;
       })
     );
@@ -126,8 +127,8 @@ class Totem extends THREE.Group {
     this.renderer.setAnimationLoop(this._renderLoop.bind(this));
     this.clock.start();
     totemLogic.actions.updateSamples(
-      totemLogic.values.sounds.map((s) => {
-        s.setVolume(1.0);
+      totemLogic.values.samples.map((s) => {
+        s?.audio?.setVolume(1.0);
         return s;
       })
     );
@@ -145,18 +146,15 @@ class Totem extends THREE.Group {
     while (this.totem.children.length > 0) {
       this.totem.remove(this.totem.children.slice(-1).pop());
     }
-    totemLogic.values.sounds.map((s) => {
-      s.pause();
+    totemLogic.values.samples.map((s) => {
+      s?.audio?.pause();
     });
     totemLogic.actions.clearSamples();
     totemLogic.actions.clearMappings();
-    this.analysers = new Array();
   }
 
   reactOnMappings() {
-    console.log("Mappings: ", Object.values(totemLogic.values.mappings));
     const mappingsArray = Object.values(totemLogic.values.mappings);
-    console.log("Sounds: ", totemLogic.values.sounds);
     // Mappings
     this._loadSounds(mappingsArray);
     this._setupMappings(mappingsArray);
@@ -164,7 +162,6 @@ class Totem extends THREE.Group {
     this._mapFeelings(mappingsArray);
     this._mapShapes(mappingsArray);
     this._mapColors(mappingsArray);
-    this._allLoaded = true;
   }
 
   reactOnStateChange() {
@@ -384,11 +381,6 @@ class Totem extends THREE.Group {
       }
     });
 
-    // Audio listener
-    this.analysers = [];
-    this.listener = new THREE.AudioListener();
-    this.camera.add(this.listener);
-
     // Light
     var light = new THREE.HemisphereLight(0xffffff, 0x666666, 3.75);
     light.position.set(0, 10, 0);
@@ -485,62 +477,58 @@ class Totem extends THREE.Group {
   }
 
   _loadSounds(mappingsArray) {
-    // Show audio sources
-    this.analysers = [];
-    const audioVisualizerCubes = [];
-
-    let audioCounter = 0;
-
     this._loadingManager = new THREE.LoadingManager();
-    const audioLoader = new THREE.AudioLoader(this._loadingManager);
+    this.listener = new THREE.AudioListener();
+    this.camera.add(this.listener);
 
+    const audioLoader = new THREE.AudioLoader(this._loadingManager);
     mappingsArray.map((c, i) => {
-      audioLoader.setPath(this._samplesFolder).load(
-        c.sample,
+      audioLoader.load(
+        `${this._samplesFolder}${c.sample}?${Date().now}`,
         (buffer) => {
-          const audio = new THREE.PositionalAudio(this.listener);
-          audio.setBuffer(buffer);
-          audio.setLoop(true);
-          audio.setVolume(1.0);
-          audio.name = c.sample;
-          const analyser = new THREE.AudioAnalyser(audio, 32);
-          analyser.smoothingTimeConstant = 0.9;
-          this.analysers.push(analyser);
           // Save audio
-          totemLogic.actions.addSample(audio);
-          totemLogic.actions.addVolume(1.0);
-          audioCounter++;
+          const sample = new Sample(this.listener, c.sample);
+          sample.setup(buffer);
+          totemLogic.actions.addSample(sample);
         },
         (xhr) => {},
         (err) => console.error("Error while loading sound ", err)
       );
     });
+
+    // After loading all sounds
+    this._loadingManager.onLoad = () => {};
+    this._loadingManager.onProgress = (url, loaded, total) => {
+      console.log((loaded / total) * 100 + "% loaded");
+      if (loaded / total >= 1.0) {
+        this._allLoaded = true;
+        console.log("All sounds loaded...");
+      }
+    };
   }
 
   _setupMaterialSphere() {
-    const geometry = new THREE.SphereGeometry(0.05, 32, 32);
-    const material = new THREE.MeshPhysicalMaterial({
-      color: 0x424242,
-      roughness: 0.6,
-      metalness: 0.7,
-    });
-    const sphere = new THREE.Mesh(geometry, material);
-    this.scene.add(sphere);
-
-    const pmremGenerator = new THREE.PMREMGenerator(this.renderer);
-    let exrCubeRenderTarget;
-    pmremGenerator.compileEquirectangularShader();
-
-    new EXRLoader()
-      .setDataType(THREE.UnsignedByteType)
-      .load(
-        "/assets/textures/abandoned_factory_canteen_01_1k.exr",
-        function (texture) {
-          exrCubeRenderTarget = pmremGenerator.fromEquirectangular(texture);
-          sphere.material.envMap = exrCubeRenderTarget.texture;
-          texture.dispose();
-        }
-      );
+    // const geometry = new THREE.SphereGeometry(0.05, 32, 32);
+    // const material = new THREE.MeshPhysicalMaterial({
+    //   color: 0x424242,
+    //   roughness: 0.6,
+    //   metalness: 0.7,
+    // });
+    // const sphere = new THREE.Mesh(geometry, material);
+    // this.scene.add(sphere);
+    // const pmremGenerator = new THREE.PMREMGenerator(this.renderer);
+    // let exrCubeRenderTarget;
+    // pmremGenerator.compileEquirectangularShader();
+    // new EXRLoader()
+    //   .setDataType(THREE.UnsignedByteType)
+    //   .load(
+    //     "/assets/textures/abandoned_factory_canteen_01_1k.exr",
+    //     function (texture) {
+    //       exrCubeRenderTarget = pmremGenerator.fromEquirectangular(texture);
+    //       sphere.material.envMap = exrCubeRenderTarget.texture;
+    //       texture.dispose();
+    //     }
+    //   );
   }
 
   _mapFeelings() {
@@ -780,40 +768,38 @@ class Totem extends THREE.Group {
 
     if (totemLogic.values.state === TOTEM_STATES.TOTEM) {
       if (!this._allLoaded) return;
-      // Analyzers
-      if (this.analysers !== undefined) {
-        let analyzerValues = this.analysers.map((analyser, i) => {
-          var data = analyser.getAverageFrequency();
-          const val = remap(data, 0.0, 127.0, 0.1, 0.5);
-          const valNorm = remap(data, 0.0, 127.0, 0.0, 1.0);
-          return valNorm;
-        });
-        if (analyzerValues.length > 0) {
-          this._audioDataMaterial.uniforms.uAverageFrequencies.value = analyzerValues;
-          this.tubeMesh.material.uniforms.uAnalysers.value = analyzerValues;
-          this.tubeMesh.material.uniforms.uAnalyserOffset.value =
-            this.shapeOffset + this.colorOffset;
-        }
+      const analyzerValues = totemLogic.values.samples.map((sample, i) => {
+        const data = sample?.analyzer?.getAverageFrequency();
+        if (data === undefined) return 0;
+        const val = remap(data, 0.0, 127.0, 0.1, 0.5);
+        const valNorm = remap(data, 0.0, 127.0, 0.0, 1.0);
+        return valNorm;
+      });
+      if (analyzerValues.length > 0) {
+        this._audioDataMaterial.uniforms.uAverageFrequencies.value = analyzerValues;
+        this.tubeMesh.material.uniforms.uAnalysers.value = analyzerValues;
+        this.tubeMesh.material.uniforms.uAnalyserOffset.value =
+          this.shapeOffset + this.colorOffset;
+      }
 
-        if (this.shapeGroup) {
-          this.shapeGroup.children.forEach((obj, i) => {
-            if (this.analysers[this.shapeOffset + i]) {
-              var data = this.analysers[
-                this.shapeOffset + i
-              ].getAverageFrequency();
-              const val = remap(data, 0.0, 127.0, 0.1, 0.5);
-              obj.scale.set(val, val, val);
-              obj.material.color = this.shapeMaterial.color
-                .clone()
-                .multiplyScalar(val * 1.0);
-            }
-          });
-        }
+      if (this.shapeGroup) {
+        this.shapeGroup.children.forEach((obj, i) => {
+          const sample = totemLogic.values.samples[this.shapeOffset + i];
+          if (sample?.analyzer) {
+            const data = sample.analyzer.getAverageFrequency();
+            const val = remap(data, 0.0, 127.0, 0.1, 0.5);
+            obj.scale.set(val, val, val);
+            obj.material.color = this.shapeMaterial.color
+              .clone()
+              .multiplyScalar(val * 1.0);
+          }
+        });
 
         if (this.feelingsGroup) {
           this.feelingsGroup.children.forEach((curveObj, i) => {
-            if (this.analysers[i]) {
-              const data = this.analysers[i].getAverageFrequency();
+            const sample = totemLogic.values.samples[i];
+            if (sample?.analyzer) {
+              const data = sample.analyzer.getAverageFrequency();
               const val = remap(data, 0.0, 127.0, 0.1, 0.5);
               const curve = this.feelingCurves[i];
               const newCenter = curve.getPointAt(0.5).multiplyScalar(val * 10);
